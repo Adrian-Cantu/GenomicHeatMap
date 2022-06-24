@@ -88,10 +88,31 @@ roc.res <- ROC.ORC(
   variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,GTSP,type)),
   origin=to_roc_df$GTSP)
 
+
+
+sort_features <- function(...){
+
+  translate_window <- setNames(c(1000,1000000), c("Kb", "Mb"))
+  xx <- tibble(.rows = length(unique(as.vector(...)))) %>%
+    mutate(site=unique(as.vector(...))) %>%
+    separate(site,into=c('fname','window'),sep = '\\.',remove = FALSE) %>%
+    separate(window,into=c('size','todel'),sep = '\\D+$',remove = FALSE) %>%
+    separate(window,into=c('todel','size_word'),sep = '^\\d+',remove = FALSE) %>%
+    mutate(size_mult=translate_window[size_word]) %>%
+    mutate(size_sort=as.numeric(size)*size_mult) %>%
+    mutate(todel=NULL) %>%
+    arrange(fname,rev(size_sort)) %>%
+    pull(var = site)
+
+  toret <- factor(as.vector(...),xx)
+  return(toret)
+}
+
 roc.res$ROC %>%
   as.data.frame() %>%
   rownames_to_column(var = "feature") %>%
   pivot_longer(!feature,values_to='val', names_to='sample') %>%
+  mutate(feature=sort_features(feature)) %>%
   ggplot( aes(sample,feature, fill= val)) +
   geom_tile() +
   scale_fill_gradientn(colours=c('blue','white','red'),
