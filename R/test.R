@@ -15,35 +15,17 @@ genome_sequence <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
 genome_sequence@user_seqnames <- genome_sequence@user_seqnames[genome_sequence@user_seqnames %in% paste0("chr", c(1:22, "X", "Y", "M"))]
 genome_sequence@seqinfo <- genome_sequence@seqinfo[paste0("chr", c(1:22, "X", "Y", "M"))]
 
-#intSites <- readRDS('intSites.rds')
 
-
-#ss<-c('GTSP5057','GTSP5064','GTSP5028','GTSP5059','GTSP5066','GTSP5030','GTSP5061','GTSP5068')
 library(RMySQL)
 library(gt23)
-dbConn  <- dbConnect(MySQL(), group='specimen_management')
-if( !file.exists('intSites')) {
 
-  ss<-c('GTSP5057','GTSP5064','GTSP5028','GTSP5059','GTSP5066','GTSP5030','GTSP5061','GTSP5068')
-  arr <-paste0("SELECT * FROM gtsp WHERE SpecimenAccNum IN ('",paste(ss,collapse = "','"),"')")
-  samples<-dbGetQuery(dbConn,arr)
+intSites <- readRDS("20220708_ViiV_insites_plus_sampleinfo.rds")
 
-  intSites <- getDBgenomicFragments(samples$SpecimenAccNum,
-                                    'specimen_management', 'intsites_miseq') %>%
-    GenomicRanges::as.data.frame() %>% filter(refGenome == 'hg38') %>%
-    makeGRangesFromDataFrame(keep.extra.columns=TRUE) %>%
-    stdIntSiteFragments(CPUs = 2 ) %>%
-    collapseReplicatesCalcAbunds() %>%
-    annotateIntSites(CPUs = 2)
-  saveRDS(intSites, 'intSites')
-} else {
-  intSites <- readRDS('intSites')
-}
-
-
+### need to chose the right grouping variable, maybe patient or GTSP or some other
 intSites_coor <- intSites %>%
   as.data.frame() %>%
-  select(c(seqnames,start,end,strand,patient)) %>%
+  filter(to_heatmap) %>%
+  select(c(seqnames,start,end,strand,patient,GTSP,Drug,concentration_nM,concentration_txt,Replicate)) %>%
   mutate(type='insertion')
 
 
@@ -56,7 +38,7 @@ intSites_coor <- intSites %>%
 #   mutate(siteID=paste0('site',row_number())) %>%
 #   relocate(siteID)
 
-df_to_randomize <- tibble(.rows = length(intSites)) %>%
+df_to_randomize <- tibble(.rows = nrow(intSites_coor)) %>%
   mutate(siteID=row_number()) %>%
   mutate(gender='m')
 
@@ -65,16 +47,24 @@ df_to_randomize <- tibble(.rows = length(intSites)) %>%
 set.seed(as.numeric(Sys.time()))
 ttt<-get_N_MRCs(df_to_randomize,genome_sequence)
 
+#set how the groups are defined by changeing patient
+group_vector<-paste0(intSites_coor$Drug,'_',intSites_coor$concentration_txt)
+intSites_coor$patient <- group_vector
+
+
 tttt <- ttt %>%
   dplyr::rename(start=position) %>%
   mutate(end=start) %>%
   mutate(siteID=NULL) %>%
   relocate(strand,.after = last_col()) %>%
-  mutate(patient=rep(intSites_coor$patient,3)) %>%
+  mutate(patient=rep(group_vector,3)) %>%
   mutate(type='match') %>%
   dplyr::rename(seqnames=chr)
 
-to_get_features <- rbind(intSites_coor,tttt)
+
+
+
+to_get_features <- rbind(intSites_coor %>% select(colnames(tttt)) ,tttt)
 
 
 epi_files <- list.files('epigenetic_features_d')
@@ -83,7 +73,7 @@ names(epi_files) <- epi_files %>% str_remove(., ".rds")
 
 #all_names <- unique(intSites$GTSP)
 
-
+### need to fix this no it is not all loaded in ram
 all_epi <- lapply(epi_files,function(x){readRDS(file.path('epigenetic_features_d', x))})
 #kk_test <- getFeatureCounts(intSites, all_epi[[1]], 'test')
 
@@ -95,7 +85,9 @@ all_epi <- lapply(epi_files,function(x){readRDS(file.path('epigenetic_features_d
 
 #head(to_get_features)
 
-to_roc_df <-as.data.frame(to_get_features)
+to_roc_df <-as.data.frame(to_get_features) %>% replace(is.na(.), 0)
+
+#to_roc_df %>%  filter(if_any(everything(), is.na)) %>% replace(is.na(.), 0)
 
 # get_annotation_columns <- function(sites) {
 #   granges_column_names <- c("seqnames", "start", "end", "width", "strand")
@@ -142,6 +134,7 @@ roc.res$ROC %>%
   mutate(feature=sort_features(feature)) %>%
   ggplot( aes(sample,feature, fill= val)) +
   geom_tile() +
+  theme_classic() +
   scale_fill_gradientn(colours=c('blue','white','red'),
                        na.value = "transparent",
                        breaks=c(0,0.5,1),
