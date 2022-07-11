@@ -74,12 +74,15 @@ names(epi_files) <- epi_files %>% str_remove(., ".rds")
 #all_names <- unique(intSites$GTSP)
 
 ### need to fix this no it is not all loaded in ram
-all_epi <- lapply(epi_files,function(x){readRDS(file.path('epigenetic_features_d', x))})
+#all_epi <- lapply(epi_files,function(x){readRDS(file.path('epigenetic_features_d', x))})
 #kk_test <- getFeatureCounts(intSites, all_epi[[1]], 'test')
 
 
-  kk <- imap(all_epi, function(x,name){
-    to_get_features <<- getFeatureCounts(to_get_features, x, name)
+  kk <- imap(epi_files, function(x,name){
+    xx <- readRDS(file.path('epigenetic_features_d', x))
+    to_get_features <<- getFeatureCounts(to_get_features, xx, name)
+    rm(xx)
+    gc()
     return(1)
   })
 
