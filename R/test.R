@@ -4,19 +4,46 @@ library(hiAnnotator)
 library(purrr)
 library(hotROCs)
 library(intSiteRetriever)
-get_N_MRCs()
-
+#get_N_MRCs()
+library(GenomicRanges)
+#jurkat <- read_tsv('wgEncodeRegDnaseUwJurkatPeak.tsv')
+#jurkat_gr <- jurkat %>% mutate(`#bin`=NULL) %>% makeGRangesFromDataFrame()
+#saveRDS(jurkat_gr,file=file.path('epigenetic_features_d','DnaseUwJurkat.rds'))
 # kk <- get_reference_genome('hg38')
 
 genome_sequence <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
 genome_sequence@user_seqnames <- genome_sequence@user_seqnames[genome_sequence@user_seqnames %in% paste0("chr", c(1:22, "X", "Y", "M"))]
 genome_sequence@seqinfo <- genome_sequence@seqinfo[paste0("chr", c(1:22, "X", "Y", "M"))]
 
-intSites <- readRDS('intSites.rds')
+#intSites <- readRDS('intSites.rds')
+
+
+#ss<-c('GTSP5057','GTSP5064','GTSP5028','GTSP5059','GTSP5066','GTSP5030','GTSP5061','GTSP5068')
+library(RMySQL)
+library(gt23)
+dbConn  <- dbConnect(MySQL(), group='specimen_management')
+if( !file.exists('intSites')) {
+
+  ss<-c('GTSP5057','GTSP5064','GTSP5028','GTSP5059','GTSP5066','GTSP5030','GTSP5061','GTSP5068')
+  arr <-paste0("SELECT * FROM gtsp WHERE SpecimenAccNum IN ('",paste(ss,collapse = "','"),"')")
+  samples<-dbGetQuery(dbConn,arr)
+
+  intSites <- getDBgenomicFragments(samples$SpecimenAccNum,
+                                    'specimen_management', 'intsites_miseq') %>%
+    GenomicRanges::as.data.frame() %>% filter(refGenome == 'hg38') %>%
+    makeGRangesFromDataFrame(keep.extra.columns=TRUE) %>%
+    stdIntSiteFragments(CPUs = 2 ) %>%
+    collapseReplicatesCalcAbunds() %>%
+    annotateIntSites(CPUs = 2)
+  saveRDS(intSites, 'intSites')
+} else {
+  intSites <- readRDS('intSites')
+}
+
 
 intSites_coor <- intSites %>%
   as.data.frame() %>%
-  select(c(seqnames,start,end,strand,GTSP)) %>%
+  select(c(seqnames,start,end,strand,patient)) %>%
   mutate(type='insertion')
 
 
@@ -43,7 +70,7 @@ tttt <- ttt %>%
   mutate(end=start) %>%
   mutate(siteID=NULL) %>%
   relocate(strand,.after = last_col()) %>%
-  mutate(GTSP=rep(intSites_coor$GTSP,3)) %>%
+  mutate(patient=rep(intSites_coor$patient,3)) %>%
   mutate(type='match') %>%
   dplyr::rename(seqnames=chr)
 
@@ -85,8 +112,8 @@ to_roc_df <-as.data.frame(to_get_features)
 
 roc.res <- ROC.ORC(
   response = to_roc_df$type,
-  variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,GTSP,type)),
-  origin=to_roc_df$GTSP)
+  variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,patient,type)),
+  origin=to_roc_df$patient)
 
 
 
