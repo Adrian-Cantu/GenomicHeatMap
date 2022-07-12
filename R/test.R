@@ -77,7 +77,7 @@ names(epi_files) <- epi_files %>% str_remove(., ".rds")
 #all_epi <- lapply(epi_files,function(x){readRDS(file.path('epigenetic_features_d', x))})
 #kk_test <- getFeatureCounts(intSites, all_epi[[1]], 'test')
 
-
+#this part is hugly and probably uses to much ram, need to rewrite getFeatureCounts
   kk <- imap(epi_files, function(x,name){
     xx <- readRDS(file.path('epigenetic_features_d', x))
     to_get_features <<- getFeatureCounts(to_get_features, xx, name)
@@ -135,14 +135,24 @@ roc.res$ROC %>%
   rownames_to_column(var = "feature") %>%
   pivot_longer(!feature,values_to='val', names_to='sample') %>%
   mutate(feature=sort_features(feature)) %>%
-  ggplot( aes(sample,feature, fill= val)) +
+  ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
   theme_classic() +
+  #coord_fixed(ratio=2/1)+
+  theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
+        axis.title.x=element_blank(),
+        # legend.position="top",
+        axis.title.y=element_blank()) +
+  labs(fill="ROC area",title="Epigenetic heatmap") +
   scale_fill_gradientn(colours=c('blue','white','red'),
                        na.value = "transparent",
                        breaks=c(0,0.5,1),
                        labels=c(0,0.5,1),
                        limits=c(0,1))
+
+
+
+ggsave('viiv_epi_genmap_20220711.pdf',width = 8.5,height = 20,units = 'in')
 
 
 
