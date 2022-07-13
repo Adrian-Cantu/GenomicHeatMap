@@ -19,6 +19,46 @@ genome_sequence@seqinfo <- genome_sequence@seqinfo[paste0("chr", c(1:22, "X", "Y
 library(RMySQL)
 library(gt23)
 
+histone_roc_features <- c('H3K4me1',
+                          'H3K4me2',
+                          'H3K4me3',
+                          'H3K9me1',
+                          'H3K9me2',
+                          'H3K9me3',
+                          'H3K27me1',
+                          'H3K27me2',
+                          'H3K27me3',
+                          'H3K36me1',
+                          'H3K36me3',
+                          'H3K79me1',
+                          'H3K79me2',
+                          'H3K79me3',
+                          'H3R2me1',
+                          'H3R2me2',
+                          'H4K20me1',
+                          'H4K20me3',
+                          'H3K4ac',
+                          'H3K9ac',
+                          'H3K14ac',
+                          'H3K18ac',
+                          'H3K23ac',
+                          'H3K27ac',
+                          'H3K36ac',
+                          'H4K5ac',
+                          'H4K8ac',
+                          'H4K12ac',
+                          'H4K16ac',
+                          'H4K91ac',
+                          'H2AK5ac',
+                          'H2AK9ac',
+                          'H2BK5ac',
+                          'H2BK12ac',
+                          'H2BK20ac',
+                          'H2BK120ac',
+                          'H2BK5me1',
+                          'H2A.Z'
+)
+
 intSites <- readRDS("20220708_ViiV_insites_plus_sampleinfo.rds")
 
 ### need to chose the right grouping variable, maybe patient or GTSP or some other
@@ -38,33 +78,7 @@ intSites_coor <- intSites %>%
 #   mutate(siteID=paste0('site',row_number())) %>%
 #   relocate(siteID)
 
-df_to_randomize <- tibble(.rows = nrow(intSites_coor)) %>%
-  mutate(siteID=row_number()) %>%
-  mutate(gender='m')
 
-
-
-set.seed(as.numeric(Sys.time()))
-ttt<-get_N_MRCs(df_to_randomize,genome_sequence)
-
-#set how the groups are defined by changeing patient
-group_vector<-paste0(intSites_coor$Drug,'_',intSites_coor$concentration_txt)
-intSites_coor$patient <- group_vector
-
-
-tttt <- ttt %>%
-  dplyr::rename(start=position) %>%
-  mutate(end=start) %>%
-  mutate(siteID=NULL) %>%
-  relocate(strand,.after = last_col()) %>%
-  mutate(patient=rep(group_vector,3)) %>%
-  mutate(type='match') %>%
-  dplyr::rename(seqnames=chr)
-
-
-
-
-to_get_features <- rbind(intSites_coor %>% select(colnames(tttt)) ,tttt)
 
 
 epi_files <- list.files('epigenetic_features_d')
@@ -77,18 +91,6 @@ names(epi_files) <- epi_files %>% str_remove(., ".rds")
 #all_epi <- lapply(epi_files,function(x){readRDS(file.path('epigenetic_features_d', x))})
 #kk_test <- getFeatureCounts(intSites, all_epi[[1]], 'test')
 
-#this part is hugly and probably uses to much ram, need to rewrite getFeatureCounts
-  kk <- imap(epi_files, function(x,name){
-    xx <- readRDS(file.path('epigenetic_features_d', x))
-    to_get_features <<- getFeatureCounts(to_get_features, xx, name)
-    rm(xx)
-    gc()
-    return(1)
-  })
-
-#head(to_get_features)
-
-to_roc_df <-as.data.frame(to_get_features) %>% replace(is.na(.), 0)
 
 #to_roc_df %>%  filter(if_any(everything(), is.na)) %>% replace(is.na(.), 0)
 
@@ -105,11 +107,54 @@ to_roc_df <-as.data.frame(to_get_features) %>% replace(is.na(.), 0)
 # required_columns %in% colnames(jointsites)
 # get_annotation_columns(jointsites)
 
+if(! file.exists('roc_res.rds')){
+  df_to_randomize <- tibble(.rows = nrow(intSites_coor)) %>%
+    mutate(siteID=row_number()) %>%
+    mutate(gender='m')
+
+
+
+  set.seed(as.numeric(Sys.time()))
+  ttt<-get_N_MRCs(df_to_randomize,genome_sequence)
+
+  #set how the groups are defined by changeing patient
+  group_vector<-paste0(intSites_coor$Drug,'_',intSites_coor$concentration_txt)
+  intSites_coor$patient <- group_vector
+
+
+  tttt <- ttt %>%
+    dplyr::rename(start=position) %>%
+    mutate(end=start) %>%
+    mutate(siteID=NULL) %>%
+    relocate(strand,.after = last_col()) %>%
+    mutate(patient=rep(group_vector,3)) %>%
+    mutate(type='match') %>%
+    dplyr::rename(seqnames=chr)
+
+  to_get_features <- rbind(intSites_coor %>% select(colnames(tttt)) ,tttt)
+
+  kk <- imap(epi_files, function(x,name){
+    xx <- readRDS(file.path('epigenetic_features_d', x))
+    to_get_features <<- getFeatureCounts(to_get_features, xx, name)
+    rm(xx)
+    gc()
+    return(1)
+  })
+
+  #head(to_get_features)
+
+  to_roc_df <-as.data.frame(to_get_features) %>% replace(is.na(.), 0)
+
+
 roc.res <- ROC.ORC(
   response = to_roc_df$type,
   variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,patient,type)),
   origin=to_roc_df$patient)
 
+saveRDS(roc.res,file = 'roc_res.rds')
+} else {
+  roc.res <- readRDS(file='roc_res.rds')
+}
 
 
 sort_features <- function(...){
@@ -130,29 +175,120 @@ sort_features <- function(...){
   return(toret)
 }
 
-roc.res$ROC %>%
+roc_df <- roc.res$ROC %>%
   as.data.frame() %>%
   rownames_to_column(var = "feature") %>%
   pivot_longer(!feature,values_to='val', names_to='sample') %>%
   mutate(feature=sort_features(feature)) %>%
+  separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
+
+his_roc_df <- roc_df %>% filter(feature_name %in% histone_roc_features)
+
+his_roc_df %>%
   ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
   theme_classic() +
-  #coord_fixed(ratio=2/1)+
-  theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
-        axis.title.x=element_blank(),
-        # legend.position="top",
-        axis.title.y=element_blank()) +
+  #theme_minimal()+
+  scale_y_discrete(labels=his_roc_df$feature_concentration,breaks=his_roc_df$feature)+
+  #geom_text(position = position_dodge(width = 1), aes(x=0, y=feature, label=feature_name)) +
+  #facet_wrap(~feature_name, scales="free")+
+
   labs(fill="ROC area",title="Epigenetic heatmap") +
-  scale_fill_gradientn(colours=c('blue','white','red'),
+  scale_fill_gradientn(colours=c('blue','gray','red'),
                        na.value = "transparent",
                        breaks=c(0,0.5,1),
                        labels=c(0,0.5,1),
-                       limits=c(0,1))
+                       limits=c(0,1)) +
+  theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
+        axis.text.y.left = element_text(size=7),
+        axis.title.x=element_blank(),
+        panel.spacing.y = unit(-0.15, "line"),
+        strip.placement='outside',
+        panel.border = element_blank(),
+        panel.background= element_blank(),
+        strip.background = element_blank(),
+        strip.text.y.left = element_text(angle=0,size=10),
+        plot.background = element_blank(),
+        # legend.position="top",
+        axis.ticks.length.y.left=unit(0.1,'line'),
+        axis.title.y=element_blank()) +
+  facet_grid(rows=vars(his_roc_df$feature_name),scales = "free_y",switch = 'y')+
+#  coord_fixed(ratio=2/1) +
+  scale_x_discrete(expand = c(0,0)) -> pp
 
 
+######### try to add lines
 
-ggsave('viiv_epi_genmap_20220711.pdf',width = 8.5,height = 20,units = 'in')
+tag_facet2 <-  function(p,
+                        tags = "letters",
+                        x = 0, y = 0.5,
+                        hjust = 0, vjust = 0.5,
+                        fontface = 2, ...){
 
+  gb <- ggplot_build(p)
+  tl <- lapply(tags, grid::textGrob, x=x, y=y,
+               hjust=hjust, vjust=vjust, gp=grid::gpar(fontface=fontface))
+  g <- ggplot_gtable(gb)
+  g <- gtable::gtable_add_grob(g, grobs = tl, t=1, l=1,clip = 'off')
+  grid::grid.newpage()
+  grid::grid.draw(g)
+}
 
+tag_facet3 <-  function(p,
+                        x1 = 0,
+                        x2=5,
+                        y1 = 0,
+                        y2 = -5,
+                        lwd=2,
+                        ...){
+  ddf <- tibble(dx1=x1,dx2=x2,dy1=y1,dy2=y2)
+  gb <- ggplot_build(p)
+  grid::grid.newpage()
+  vp <- viewport(width = unit(8.5, "inches"), height = unit(11, "inches"))
+  pushViewport(vp)
+  tl <- purrr::pmap(ddf,~grid::linesGrob(x=c(..1,..2),y=c(..3,..4),
+                    gp=grid::gpar(lwd=lwd),default.units = "lines"),vp=vp)
+  # tl <- lapply(ddf, grid::linesGrob, x=c(dx1,dx2), y=c(dy1,dy2),
+  #             gp=grid::gpar(lwd=lwd))
+  g <- ggplot_gtable(gb)
+  g <- gtable::gtable_add_grob(g, grobs = tl, t=1, l=1,clip = 'off')
+  #grid::grid.newpage()
+  grid::grid.draw(p)
+  grid::grid.draw(tl[[1]])
+  grid.lines(x=c(0,0.5),y=c(0,0.5),gp=grid::gpar(lwd=lwd))
+}
+
+library(ggplot2)
+library(grid)
+#ggsave('viiv_epi_genmap_test_20220712.pdf',width = 8.5,height = 11,units = 'in')
+
+#data = data.frame(feature_name='H4K16ac')
+
+#p1 = pp + annotation_custom2(linesGrob(), xmin = 2.6, xmax = 2.75, ymin = 100, ymax = 100, data = his_roc_df)
+
+#tag_facet3(pp,x1=11,x2=11,y1=-5,y2=-10)
+
+pdf(file='histone_heatmap.pdf',width = 8.5,height = 11)
+#grid::grid.newpage()
+#vp <- viewport(width = unit(7.5, "inches"), height = unit(10, "inches"))
+#pushViewport(vp)
+grid::grid.draw(pp)
+y1<-0.07
+dy<-0.0184
+ddy<-0.006
+grid.lines(x=c(0.11,0.11),y=c(y1,y1+dy),gp=grid::gpar(lwd=1))
+for (val in 1:36) {
+  y1<-y1+ddy+dy
+  grid.lines(x=c(0.11,0.11),y=c(y1,y1+dy),gp=grid::gpar(lwd=1))
+}
+dev.off()
+
+#ggsave('test.pdf',width = 8.5,height = 11,units = 'in')
+# # Code to override clipping
+# gt <- ggplotGrob(p1)
+# gt$layout[grepl("panel", gt$layout$name), ]$clip <- "off"
+#
+# # Draw the plot
+# grid.newpage()
+# grid.draw(gt)
 
