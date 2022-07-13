@@ -182,19 +182,35 @@ roc_df <- roc.res$ROC %>%
   mutate(feature=sort_features(feature)) %>%
   separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
 
-his_roc_df <- roc_df %>% filter(feature_name %in% histone_roc_features)
+ roc_df %>% filter(feature_name %in% histone_roc_features)
+
+stat_cuts <- c(0, 0.001, 0.01, 0.05, 1)
+roc_pval <- roc.res$pvalues$np %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "feature") %>%
+  pivot_longer(!feature,values_to='pval', names_to='sample') %>%
+  mutate(feature=sort_features(feature)) %>%
+  mutate(pval_txt=cut(pval, stat_cuts, labels = c("***", " **", " * ", "   "),include.lowest = TRUE))
+
+his_roc_df <- left_join(roc_df %>% filter(feature_name %in% histone_roc_features) %>%
+                          mutate(jj=paste0(feature,'_',sample)),
+          roc_pval%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(pval,pval_txt,jj)),
+          by='jj') %>%
+  mutate(jj=NULL)
+
 
 his_roc_df %>%
   ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
+  geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
   theme_classic() +
   #theme_minimal()+
   scale_y_discrete(labels=his_roc_df$feature_concentration,breaks=his_roc_df$feature)+
   #geom_text(position = position_dodge(width = 1), aes(x=0, y=feature, label=feature_name)) +
   #facet_wrap(~feature_name, scales="free")+
 
-  labs(fill="ROC area",title="Epigenetic heatmap") +
-  scale_fill_gradientn(colours=c('blue','gray','red'),
+  labs(fill="ROC area",title="Histone heatmap") +
+  scale_fill_gradientn(colours=c('blue','grey90','red'),
                        na.value = "transparent",
                        breaks=c(0,0.5,1),
                        labels=c(0,0.5,1),
@@ -217,46 +233,6 @@ his_roc_df %>%
   scale_x_discrete(expand = c(0,0)) -> pp
 
 
-######### try to add lines
-
-tag_facet2 <-  function(p,
-                        tags = "letters",
-                        x = 0, y = 0.5,
-                        hjust = 0, vjust = 0.5,
-                        fontface = 2, ...){
-
-  gb <- ggplot_build(p)
-  tl <- lapply(tags, grid::textGrob, x=x, y=y,
-               hjust=hjust, vjust=vjust, gp=grid::gpar(fontface=fontface))
-  g <- ggplot_gtable(gb)
-  g <- gtable::gtable_add_grob(g, grobs = tl, t=1, l=1,clip = 'off')
-  grid::grid.newpage()
-  grid::grid.draw(g)
-}
-
-tag_facet3 <-  function(p,
-                        x1 = 0,
-                        x2=5,
-                        y1 = 0,
-                        y2 = -5,
-                        lwd=2,
-                        ...){
-  ddf <- tibble(dx1=x1,dx2=x2,dy1=y1,dy2=y2)
-  gb <- ggplot_build(p)
-  grid::grid.newpage()
-  vp <- viewport(width = unit(8.5, "inches"), height = unit(11, "inches"))
-  pushViewport(vp)
-  tl <- purrr::pmap(ddf,~grid::linesGrob(x=c(..1,..2),y=c(..3,..4),
-                    gp=grid::gpar(lwd=lwd),default.units = "lines"),vp=vp)
-  # tl <- lapply(ddf, grid::linesGrob, x=c(dx1,dx2), y=c(dy1,dy2),
-  #             gp=grid::gpar(lwd=lwd))
-  g <- ggplot_gtable(gb)
-  g <- gtable::gtable_add_grob(g, grobs = tl, t=1, l=1,clip = 'off')
-  #grid::grid.newpage()
-  grid::grid.draw(p)
-  grid::grid.draw(tl[[1]])
-  grid.lines(x=c(0,0.5),y=c(0,0.5),gp=grid::gpar(lwd=lwd))
-}
 
 library(ggplot2)
 library(grid)
@@ -276,10 +252,15 @@ grid::grid.draw(pp)
 y1<-0.07
 dy<-0.0184
 ddy<-0.006
+dx <- 0.01
 grid.lines(x=c(0.11,0.11),y=c(y1,y1+dy),gp=grid::gpar(lwd=1))
+grid.lines(x=c(0.11,0.11+dx),y=c(y1,y1),gp=grid::gpar(lwd=1))
+grid.lines(x=c(0.11,0.11+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=1))
 for (val in 1:36) {
   y1<-y1+ddy+dy
   grid.lines(x=c(0.11,0.11),y=c(y1,y1+dy),gp=grid::gpar(lwd=1))
+  grid.lines(x=c(0.11,0.11+dx),y=c(y1,y1),gp=grid::gpar(lwd=1))
+  grid.lines(x=c(0.11,0.11+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=1))
 }
 dev.off()
 
@@ -292,3 +273,10 @@ dev.off()
 # grid.newpage()
 # grid.draw(gt)
 
+
+
+  #separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
+
+
+
+#roc.res$ROC
