@@ -11,10 +11,27 @@ library(GenomicRanges)
 #saveRDS(jurkat_gr,file=file.path('epigenetic_features_d','DnaseUwJurkat.rds'))
 # kk <- get_reference_genome('hg38')
 
+
+
+
 genome_sequence <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
 genome_sequence@user_seqnames <- genome_sequence@user_seqnames[genome_sequence@user_seqnames %in% paste0("chr", c(1:22, "X", "Y", "M"))]
 genome_sequence@seqinfo <- genome_sequence@seqinfo[paste0("chr", c(1:22, "X", "Y", "M"))]
 
+
+# DNASE1 <- read_table('wgEncodeRegDnaseClustered.txt',col_names = c('bin','chrom','start','end','name','score',
+#                                                                    'sourceCounts','sourceIds','sourceScores'))
+# DNASE1_gr <- DNASE1 %>% filter(chrom %in% paste0("chr", c(1:22, "X", "Y", "M"))) %>%
+#   select(c(chrom,start,end)) %>%
+#   makeGRangesFromDataFrame(seqinfo=genome_sequence@seqinfo)
+# saveRDS(DNASE1_gr,file=file.path('epigenetic_features_d','Dnase.rds'))
+
+# CPGis <- read_table('cpgIslandExt.txt',
+#                     col_names = c('bin','chrom','start','end','v1','v2','v3','v4','v5','v6','v7','v8'))
+# CPGis_gr <- CPGis %>% filter(chrom %in% paste0("chr", c(1:22, "X", "Y", "M"))) %>%
+#   select(c(chrom,start,end)) %>%
+#   makeGRangesFromDataFrame(seqinfo=genome_sequence@seqinfo)
+#   saveRDS(CPGis_gr,file=file.path('epigenetic_features_d','CPGis.rds'))
 
 library(RMySQL)
 library(gt23)

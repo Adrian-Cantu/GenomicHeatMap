@@ -6,7 +6,7 @@ library(hotROCs)
 library(intSiteRetriever)
 #get_N_MRCs()
 library(GenomicRanges)
-
+library(rtracklayer)
 
 #
 genome_sequence <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
@@ -67,33 +67,11 @@ window_size_epi <- c("10k"=1e4)
 refGenes <- readRDS(file="hg38.refSeq.rds")
 refGenes <- refGenes[seqnames(refGenes) %in% paste0("chr", c(1:22, "X", "Y", "M"))]
 
-CpG_data <- cpg <- getUCSCtable("cpgIslandExt", "CpG Islands", freeze = "hg38") %>%
-  dplyr::filter(chrom %in% paste0("chr", c(1:22, "X", "Y", "M")))
+CpG_islands <- readRDS(file=file.path('epigenetic_features_d','CPGis.rds'))
 
-#getUCSCtable("cpgIslandExt", "CpG Islands", freeze = "hg38")
+DNaseI <- readRDS(file=file.path('epigenetic_features_d','Dnase.rds'))
 
 
-CpG_islands <- GenomicRanges::GRanges(
-  seqnames = CpG_data$chrom,
-  ranges = IRanges::IRanges(
-    start = CpG_data$chromStart, end = CpG_data$chromEnd
-  ),
-  strand = "*",
-  seqinfo = GenomeInfoDb::seqinfo(genome_sequence)
-)
-
-mcols(CpG_islands) <- CpG_data
-#
-DNaseI_data <- getUCSCtable("wgEncodeRegDnaseClustered", "DNase Clusters", freeze = "hg38") %>%
-  dplyr::filter(chrom %in% paste0("chr", c(1:22, "X", "Y", "M")))
-
-DNaseI <- GenomicRanges::GRanges(
-  seqnames = DNaseI_data$chrom,
-  ranges = IRanges::IRanges(start = DNaseI_data$chromStart, end = DNaseI_data$chromEnd),
-  strand = "*",
-  seqinfo = GenomeInfoDb::seqinfo(genome_sequence))
-
-mcols(DNaseI) <- DNaseI_data
 #
 from_counts_to_density <- function(sites, column_prefix, window_size) {
   metadata <- mcols(sites)
@@ -106,24 +84,15 @@ from_counts_to_density <- function(sites, column_prefix, window_size) {
   mcols(sites) <- metadata
   sites
 }
-####
 
-####
-#all_names <- unique(intSites$GTSP)[100:104]
-all_names <- unique(to_get_features$patient)
-#plan(sequential)
-#plan(multisession, workers = .num_cores)
-l_names <- length(all_names)
 
 hg38_seqinfo <- genome_sequence@seqinfo
-#hg38_seqlev <- seqlevels(BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38)
+
 
 
   c_sample <- to_get_features
 
-# 142938751
-
-  gen_final_data <- c_sample %>% as.data.frame() %>% sample_n(4000) %>%   #filter(start==142938751) %>%
+  gen_final_data <- c_sample %>% #as.data.frame() %>% slice_head(n=12000) %>% slice_tail(n=6000) %>%  # sample_n(40) %>%   #filter(start==142938751) %>%
     GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns=TRUE,seqinfo = hg38_seqinfo) %>%
     hiAnnotator::getFeatureCounts(refGenes, "refSeq_counts", width = window_size_refSeq) %>%
     GCcontent::getGCpercentage("GC", window_size_GC, genome_sequence) %>%
@@ -133,15 +102,84 @@ hg38_seqinfo <- genome_sequence@seqinfo
     hiAnnotator::getFeatureCounts(DNaseI, "DNaseI_count", width = window_size_DNaseI) %>%
     as.data.frame()
 
-  hg38_seqinfo %>% as.data.frame()
+# debug area -----------
+
+# gen_final_data %>% filter(if_any(everything(), is.na)) %>% head()
+# testhead <- gen_final_data %>% filter(!is.na(GC.1k)) %>% filter(is.na(GC.100)) %>%
+#   GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns=TRUE,seqinfo = hg38_seqinfo)
+#
 
 
-gen_final_data %>% filter(is.na(DNaseI_count.1k)) %>% pull(var=seqnames) %>%  unique()
-# chr7 chr8 chr3 chr4 chr6 chr2 chr9 chr5 chrX
+#Biostrings::getSeq(genome_sequence,testhead+500)
 
+#gen_final_data %>% filter(if_any(everything(), is.na)) %>% pull(var = type) %>% unique()
+#gen_final_data %>% filter(if_any(everything(), is.na)) %>%  head()
 
-gen_final_data %>% filter(if_any(everything(), is.na)) -> kk
+# DNAse1 and cpg island where not downloading fully, fixed getting file from UCSC server
+# DNAse1 and cpg island are not annotated in ChrmM, just affect 1 site, ignorign for the moment
+# CG content retrun NA if there are only N, affect only random samples
+
+###########
+
+to_roc_df <-as.data.frame(gen_final_data) %>% replace(is.na(.), 0)
 roc.res <- ROC.ORC(
-  response = gen_final_data$type,
-  variables = gen_final_data %>% select(-c(seqnames,start,end,width,strand,patient,type)),
-  origin=gen_final_data$patient)
+  response = to_roc_df$type,
+  variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,patient,type)),
+  origin=to_roc_df$patient)
+
+sort_features <- function(...){
+
+  translate_window <- setNames(c(1000,1000000), c("Kb", "Mb"))
+  xx <- tibble(.rows = length(unique(as.vector(...)))) %>%
+    mutate(site=unique(as.vector(...))) %>%
+    separate(site,into=c('fname','window'),sep = '\\.',remove = FALSE) %>%
+    separate(window,into=c('size','todel'),sep = '\\D+$',remove = FALSE) %>%
+    separate(window,into=c('todel','size_word'),sep = '^\\d+',remove = FALSE) %>%
+    mutate(size_mult=translate_window[size_word]) %>%
+    mutate(size_sort=as.numeric(size)*size_mult) %>%
+    mutate(todel=NULL) %>%
+    arrange(fname,rev(size_sort)) %>%
+    pull(var = site)
+
+  toret <- factor(as.vector(...),xx)
+  return(toret)
+}
+
+
+roc_df <- roc.res$ROC %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "feature") %>%
+  pivot_longer(!feature,values_to='val', names_to='sample') %>%
+  #mutate(feature=sort_features(feature)) %>%
+  separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
+
+
+roc_df %>%
+  ggplot( aes(y=feature,x=sample, fill= val)) +
+  geom_tile() +
+#  geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  theme_classic() +
+  scale_y_discrete(labels=roc_df$feature_concentration,breaks=roc_df$feature,expand = c(0,0))+
+  labs(fill="ROC area",title="Genomic heatmap") +
+  scale_fill_gradientn(colours=c('purple4','yellow'),
+                       na.value = "transparent",
+                       breaks=c(0,0.5,1),
+                       labels=c(0,0.5,1),
+                       limits=c(0,1)) +
+  theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
+        axis.text.y.left = element_text(size=7),
+        axis.title.x=element_blank(),
+        panel.spacing.y = unit(-0.3, "line"),
+        strip.placement='outside',
+        panel.border = element_blank(),
+        panel.background= element_blank(),
+        strip.background = element_blank(),
+        strip.text.y.left = element_text(angle=0,size=10),
+        plot.background = element_blank(),
+        axis.ticks.length.y.left=unit(0.1,'line'),
+        axis.title.y=element_blank()) +
+  facet_grid(rows=vars(roc_df$feature_name),scales = "free_y",space='free_y' ,switch = 'y')+
+  scale_x_discrete(expand = c(0,0))
+  #scale_y_discrete())
+
+
