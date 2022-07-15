@@ -76,7 +76,15 @@ histone_roc_features <- c('H3K4me1',
                           'H2A.Z'
 )
 
+bound_roc_features <- c('PolII',
+                        'DnaseUwJurkat',
+                        'CTCF',
+                        'ActivatedNucleosomes',
+                        'Act_CD4_HDAC6',
+                        'Act_CD4_Tip60')
+
 intSites <- readRDS("20220714_ViiV_insites_plus_sampleinfo.rds")
+
 
 ### need to chose the right grouping variable, maybe patient or GTSP or some other
 intSites_coor <- intSites %>%
@@ -231,7 +239,7 @@ his_roc_df %>%
                        labels=c(0,0.5,1),
                        limits=c(0,1)) +
   theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
-        axis.text.y.left = element_text(size=7),
+        axis.text.y.left = element_text(size=9),
         axis.title.x=element_blank(),
         panel.spacing.y = unit(-0.15, "line"),
         strip.placement='outside',
@@ -279,19 +287,67 @@ for (val in 1:36) {
 }
 dev.off()
 
-#ggsave('test.pdf',width = 8.5,height = 11,units = 'in')
-# # Code to override clipping
-# gt <- ggplotGrob(p1)
-# gt$layout[grepl("panel", gt$layout$name), ]$clip <- "off"
-#
-# # Draw the plot
-# grid.newpage()
-# grid.draw(gt)
+#### bound ------------
 
 
 
-  #separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
+bp_roc_df <- left_join(roc_df %>% filter(feature_name %in% bound_roc_features) %>%
+                          mutate(jj=paste0(feature,'_',sample)),
+                        roc_pval%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(pval,pval_txt,jj)),
+                        by='jj') %>%
+  mutate(jj=NULL)
 
 
+bp_roc_df %>%
+  ggplot( aes(y=feature,x=sample, fill= val)) +
+  geom_tile() +
+  geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  theme_classic() +
+  scale_y_discrete(labels=bp_roc_df$feature_concentration,breaks=bp_roc_df$feature,expand = c(0,0))+
+  labs(fill="ROC area",title="Bound protein heatmap") +
+  scale_fill_gradientn(colours=c('green','grey90','magenta'),
+                       na.value = "transparent",
+                       breaks=c(0,0.5,1),
+                       labels=c(0,0.5,1),
+                       limits=c(0,1)) +
+  theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
+        axis.text.y.left = element_text(size=11),
+        axis.title.x=element_blank(),
+        panel.spacing.y = unit(-0.15, "line"),
+        strip.placement='outside',
+        panel.border = element_blank(),
+        panel.background= element_blank(),
+        strip.background = element_blank(),
+        strip.text.y.left = element_text(angle=0,size=14),
+        plot.background = element_blank(),
+        # legend.position="top",
+        axis.ticks.length.y.left=unit(0.1,'line'),
+        axis.title.y=element_blank()) +
+  facet_grid(rows=vars(bp_roc_df$feature_name),scales = "free_y",switch = 'y')+
+  #  coord_fixed(ratio=2/1) +
+  scale_x_discrete(expand = c(0,0)) -> pp2
 
-#roc.res$ROC
+pdf(file='bound_protein_heatmap.pdf',width = 8.5,height = 11)
+#grid::grid.newpage()
+#vp <- viewport(width = unit(7.5, "inches"), height = unit(10, "inches"))
+#pushViewport(vp)
+grid::grid.draw(pp2)
+y1<-0.07
+dy<-0.1425
+ddy<-0.008
+dx <- 0.01
+xx <- 0.26
+ll <-1
+grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
+grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
+grid.lines(x=c(xx,xx+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=ll))
+#grid.lines(x=c(xx-dx,xx+dx),y=c(y1+dy/2,y1+dy/2),gp=grid::gpar(lwd=ll))
+for (val in 1:5) {
+  y1<-y1+ddy+dy
+  grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
+  grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
+  grid.lines(x=c(xx,xx+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=ll))
+#  grid.lines(x=c(xx-dx,xx+dx),y=c(y1+dy/2,y1+dy/2),gp=grid::gpar(lwd=ll))
+}
+dev.off()
+

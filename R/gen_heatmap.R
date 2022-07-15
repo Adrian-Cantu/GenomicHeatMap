@@ -93,7 +93,7 @@ hg38_seqinfo <- genome_sequence@seqinfo
     hiAnnotator::getFeatureCounts(CpG_islands, "CpG_counts", width = window_size) %>%
     hiAnnotator::getFeatureCounts(CpG_islands, "CpG_density", width = window_size) %>%
     from_counts_to_density("CpG_density", window_size) %>%
-    hiAnnotator::getFeatureCounts(DNaseI, "DNaseI_count", width = window_size) %>%
+#    hiAnnotator::getFeatureCounts(DNaseI, "DNaseI_count", width = window_size) %>%
     as.data.frame()
 
 # debug area -----------
@@ -175,14 +175,14 @@ roc_df %>%
                        labels=c(0,0.5,1),
                        limits=c(0,1)) +
   theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
-        axis.text.y.left = element_text(size=7),
+        axis.text.y.left = element_text(size=11),
         axis.title.x=element_blank(),
         panel.spacing.y = unit(-0.1, "line"),
         strip.placement='outside',
         panel.border = element_blank(),
         panel.background= element_blank(),
         strip.background = element_blank(),
-        strip.text.y.left = element_text(angle=0,size=10),
+        strip.text.y.left = element_text(angle=0,size=12),
         plot.background = element_blank(),
         axis.ticks.length.y.left=unit(0.1,'line'),
         axis.title.y=element_blank()) +
@@ -197,15 +197,15 @@ pdf(file='genomic_heatmap.pdf',width = 8.5,height = 11)
 #pushViewport(vp)
 grid::grid.draw(pp)
 y1<-0.07
-dy<-0.174
+dy<-0.22
 ddy<-0.006
 dx <- 0.01
-xx <- 0.13
+xx <- 0.15
 ll <-1
 grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
 grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
 grid.lines(x=c(xx,xx+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=ll))
-for (val in 1:4) {
+for (val in 1:3) {
   y1<-y1+ddy+dy
   grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
   grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
