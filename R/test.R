@@ -199,8 +199,6 @@ roc_df <- roc.res$ROC %>%
   mutate(feature=sort_features(feature)) %>%
   separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
 
- roc_df %>% filter(feature_name %in% histone_roc_features)
-
 stat_cuts <- c(0, 0.001, 0.01, 0.05, 1)
 roc_pval <- roc.res$pvalues$np %>%
   as.data.frame() %>%

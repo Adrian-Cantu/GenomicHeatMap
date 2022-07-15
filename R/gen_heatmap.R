@@ -55,13 +55,7 @@ to_get_features <- rbind(intSites_coor %>% select(colnames(tttt)) ,tttt)
 #################################### start getting genomic ---------------------
 
 ## windows
-window_size_refSeq <- c("10k"=1e4, "100k"=1e5, "1M"=1e6)
-window_size_CpG_counts <- c("1k"=1e3, "10k"=1e4)
-window_size_CpG_density <- c("10k"=1e4, "100k"=1e5, "1M"=1e6)
-window_size_GC <- c("100"=100, "1k"=1000, "10k"=1e4, "100k"=1e5, "1M"=1e6)
-#window_size_GC <- c("100"=100, "1k"=1000)
-window_size_DNaseI <- c("1k"=1e3, "10k"=1e4, "100k"=1e5, "1M"=1e6)
-window_size_epi <- c("10k"=1e4)
+window_size <- c("1k"=1e4, "10k"=1e4, "1M"=1e6)
 
 #
 refGenes <- readRDS(file="hg38.refSeq.rds")
@@ -94,12 +88,12 @@ hg38_seqinfo <- genome_sequence@seqinfo
 
   gen_final_data <- c_sample %>% #as.data.frame() %>% slice_head(n=12000) %>% slice_tail(n=6000) %>%  # sample_n(40) %>%   #filter(start==142938751) %>%
     GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns=TRUE,seqinfo = hg38_seqinfo) %>%
-    hiAnnotator::getFeatureCounts(refGenes, "refSeq_counts", width = window_size_refSeq) %>%
-    GCcontent::getGCpercentage("GC", window_size_GC, genome_sequence) %>%
-    hiAnnotator::getFeatureCounts(CpG_islands, "CpG_counts", width = window_size_CpG_counts) %>%
-    hiAnnotator::getFeatureCounts(CpG_islands, "CpG_density", width = window_size_CpG_density) %>%
-    from_counts_to_density("CpG_density", window_size_CpG_density) %>%
-    hiAnnotator::getFeatureCounts(DNaseI, "DNaseI_count", width = window_size_DNaseI) %>%
+    hiAnnotator::getFeatureCounts(refGenes, "refSeq_counts", width = window_size) %>%
+    GCcontent::getGCpercentage("GC", window_size, genome_sequence) %>%
+    hiAnnotator::getFeatureCounts(CpG_islands, "CpG_counts", width = window_size) %>%
+    hiAnnotator::getFeatureCounts(CpG_islands, "CpG_density", width = window_size) %>%
+    from_counts_to_density("CpG_density", window_size) %>%
+    hiAnnotator::getFeatureCounts(DNaseI, "DNaseI_count", width = window_size) %>%
     as.data.frame()
 
 # debug area -----------
@@ -146,22 +140,36 @@ sort_features <- function(...){
 }
 
 
-roc_df <- roc.res$ROC %>%
+roc_df_tmp <- roc.res$ROC %>%
   as.data.frame() %>%
   rownames_to_column(var = "feature") %>%
   pivot_longer(!feature,values_to='val', names_to='sample') %>%
-  #mutate(feature=sort_features(feature)) %>%
+  mutate(feature=sort_features(feature)) %>%
   separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
+
+
+stat_cuts <- c(0, 0.001, 0.01, 0.05, 1)
+roc_pval <- roc.res$pvalues$np %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "feature") %>%
+  pivot_longer(!feature,values_to='pval', names_to='sample') %>%
+  mutate(feature=sort_features(feature)) %>%
+  mutate(pval_txt=cut(pval, stat_cuts, labels = c("***", " **", " * ", "   "),include.lowest = TRUE))
+
+roc_df <- left_join(roc_df_tmp %>%  mutate(jj=paste0(feature,'_',sample)),
+                        roc_pval%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(pval,pval_txt,jj)),
+                        by='jj') %>%
+  mutate(jj=NULL)
 
 
 roc_df %>%
   ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
-#  geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  geom_text(aes(label = pval_txt), color = "black", size = 5, nudge_y = -0.15)+
   theme_classic() +
   scale_y_discrete(labels=roc_df$feature_concentration,breaks=roc_df$feature,expand = c(0,0))+
   labs(fill="ROC area",title="Genomic heatmap") +
-  scale_fill_gradientn(colours=c('purple4','yellow'),
+  scale_fill_gradientn(colours=c('purple2','grey95','yellow'),
                        na.value = "transparent",
                        breaks=c(0,0.5,1),
                        labels=c(0,0.5,1),
@@ -169,7 +177,7 @@ roc_df %>%
   theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
         axis.text.y.left = element_text(size=7),
         axis.title.x=element_blank(),
-        panel.spacing.y = unit(-0.3, "line"),
+        panel.spacing.y = unit(-0.1, "line"),
         strip.placement='outside',
         panel.border = element_blank(),
         panel.background= element_blank(),
@@ -179,7 +187,29 @@ roc_df %>%
         axis.ticks.length.y.left=unit(0.1,'line'),
         axis.title.y=element_blank()) +
   facet_grid(rows=vars(roc_df$feature_name),scales = "free_y",space='free_y' ,switch = 'y')+
-  scale_x_discrete(expand = c(0,0))
+  scale_x_discrete(expand = c(0,0)) -> pp
   #scale_y_discrete())
+library(grid)
 
+pdf(file='genomic_heatmap.pdf',width = 8.5,height = 11)
+#grid::grid.newpage()
+#vp <- viewport(width = unit(7.5, "inches"), height = unit(10, "inches"))
+#pushViewport(vp)
+grid::grid.draw(pp)
+y1<-0.07
+dy<-0.174
+ddy<-0.006
+dx <- 0.01
+xx <- 0.13
+ll <-1
+grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
+grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
+grid.lines(x=c(xx,xx+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=ll))
+for (val in 1:4) {
+  y1<-y1+ddy+dy
+  grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
+  grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
+  grid.lines(x=c(xx,xx+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=ll))
+}
+dev.off()
 
