@@ -14,7 +14,7 @@ genome_sequence@user_seqnames <- genome_sequence@user_seqnames[genome_sequence@u
 genome_sequence@seqinfo <- genome_sequence@seqinfo[paste0("chr", c(1:22, "X", "Y", "M"))]
 #
 
-intSites <- readRDS("20220708_ViiV_insites_plus_sampleinfo.rds")
+intSites <- readRDS("20220714_ViiV_insites_plus_sampleinfo.rds")
 
 ### need to chose the right grouping variable, maybe patient or GTSP or some other
 intSites_coor <- intSites %>%

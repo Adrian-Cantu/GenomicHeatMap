@@ -76,7 +76,7 @@ histone_roc_features <- c('H3K4me1',
                           'H2A.Z'
 )
 
-intSites <- readRDS("20220708_ViiV_insites_plus_sampleinfo.rds")
+intSites <- readRDS("20220714_ViiV_insites_plus_sampleinfo.rds")
 
 ### need to chose the right grouping variable, maybe patient or GTSP or some other
 intSites_coor <- intSites %>%
