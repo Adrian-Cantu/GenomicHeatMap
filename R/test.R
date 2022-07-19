@@ -221,17 +221,61 @@ his_roc_df <- left_join(roc_df %>% filter(feature_name %in% histone_roc_features
           by='jj') %>%
   mutate(jj=NULL)
 
+#### vs vehicle stars
+roc.res$pvalues$np %>% rownames() %>% length() -> epirownames
+
+mk.stars <- function(pvmat) {
+  x <- array("", dim(pvmat))
+  x[] <- as.character(cut(pvmat, c(0, 0.001, 0.01, 0.05,
+                                   1), c("***", "**", "*", ""), include.lowest = TRUE))
+  x
+}
+
+roc.rows <- nrow(roc.res$ROC)
+roc.cols <- ncol(roc.res$ROC)
+
+opvals <- roc.res$pvalues$op
+vpvals <- roc.res$pvalues$vp
+nullpvals <- roc.res$pvalues$np
+opstars <- mk.stars(opvals)
+vpstars <- mk.stars(vpvals)
+nullpstars <- mk.stars(nullpvals)
+matchCol <- function(x, indx) x[2:1, ][x == indx]
+isCol <- function(x, indx) colSums(x == indx) == 1
+omasks <- lapply(1:roc.cols, function(x) {
+  res <- array("", dim(roc.res$ROC))
+  res[, x] <- "--"
+  wc <- attr(opvals, "whichCol")
+  res[, matchCol(wc, x)] <- opstars[, isCol(wc, x)]
+  res
+})
+
+vehicle_stars <- omasks[[7]] %>%
+  `colnames<-`(colnames(roc.res$ROC)) %>%
+  `rownames<-`(rownames(roc.res$ROC)) %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "feature") %>%
+  pivot_longer(!feature,values_to='v_star', names_to='sample')
+
+vehicle_stars
+
+his_roc_df <- left_join(his_roc_df %>% filter(feature_name %in% histone_roc_features) %>%
+                          mutate(jj=paste0(feature,'_',sample)),
+                        vehicle_stars%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(v_star,jj)),
+                        by='jj') %>%
+  mutate(jj=NULL)
+
+ROCSVG()
+###
+
 
 his_roc_df %>%
   ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
-  geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  #geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  geom_text(aes(label = v_star), color = "black", size = 3, nudge_y = -0.15)+
   theme_classic() +
-  #theme_minimal()+
   scale_y_discrete(labels=his_roc_df$feature_concentration,breaks=his_roc_df$feature)+
-  #geom_text(position = position_dodge(width = 1), aes(x=0, y=feature, label=feature_name)) +
-  #facet_wrap(~feature_name, scales="free")+
-
   labs(fill="ROC area",title="Histone heatmap") +
   scale_fill_gradientn(colours=c('blue','grey90','red'),
                        na.value = "transparent",
@@ -297,11 +341,18 @@ bp_roc_df <- left_join(roc_df %>% filter(feature_name %in% bound_roc_features) %
                         by='jj') %>%
   mutate(jj=NULL)
 
+bp_roc_df <- left_join(bp_roc_df %>% filter(feature_name %in% bound_roc_features) %>%
+                         mutate(jj=paste0(feature,'_',sample)),
+                       vehicle_stars %>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(v_star,jj)),
+                       by='jj') %>%
+  mutate(jj=NULL)
+
 
 bp_roc_df %>%
   ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
-  geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  #geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  geom_text(aes(label = v_star), color = "black", size = 3, nudge_y = -0.15)+
   theme_classic() +
   scale_y_discrete(labels=bp_roc_df$feature_concentration,breaks=bp_roc_df$feature,expand = c(0,0))+
   labs(fill="ROC area",title="Bound protein heatmap") +
@@ -336,7 +387,7 @@ y1<-0.07
 dy<-0.1425
 ddy<-0.008
 dx <- 0.01
-xx <- 0.26
+xx <- 0.255
 ll <-1
 grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
 grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
