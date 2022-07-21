@@ -25,7 +25,7 @@ intSites_coor <- intSites %>%
 
 
 ### start roc code
-
+if(! file.exists('roc_res_gen.rds')){
 df_to_randomize <- tibble(.rows = nrow(intSites_coor)) %>%
   mutate(siteID=row_number()) %>%
   mutate(gender='m')
@@ -121,6 +121,12 @@ roc.res <- ROC.ORC(
   variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,patient,type)),
   origin=to_roc_df$patient)
 
+saveRDS(roc.res,file = 'roc_res_gen.rds')
+} else {
+  roc.res <- readRDS(file='roc_res_gen.rds')
+}
+
+
 sort_features <- function(...){
 
   translate_window <- setNames(c(1000,1000000), c("Kb", "Mb"))
@@ -156,16 +162,60 @@ roc_pval <- roc.res$pvalues$np %>%
   mutate(feature=sort_features(feature)) %>%
   mutate(pval_txt=cut(pval, stat_cuts, labels = c("***", " **", " * ", "   "),include.lowest = TRUE))
 
-roc_df <- left_join(roc_df_tmp %>%  mutate(jj=paste0(feature,'_',sample)),
+roc_df_tmp2 <- left_join(roc_df_tmp %>%  mutate(jj=paste0(feature,'_',sample)),
                         roc_pval%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(pval,pval_txt,jj)),
                         by='jj') %>%
   mutate(jj=NULL)
+
+#### vehicle star
+
+mk.stars <- function(pvmat) {
+  x <- array("", dim(pvmat))
+  x[] <- as.character(cut(pvmat, c(0, 0.001, 0.01, 0.05,
+                                   1), c("***", "**", "*", ""), include.lowest = TRUE))
+  x
+}
+
+roc.rows <- nrow(roc.res$ROC)
+roc.cols <- ncol(roc.res$ROC)
+
+opvals <- roc.res$pvalues$op
+vpvals <- roc.res$pvalues$vp
+nullpvals <- roc.res$pvalues$np
+opstars <- mk.stars(opvals)
+vpstars <- mk.stars(vpvals)
+nullpstars <- mk.stars(nullpvals)
+matchCol <- function(x, indx) x[2:1, ][x == indx]
+isCol <- function(x, indx) colSums(x == indx) == 1
+omasks <- lapply(1:roc.cols, function(x) {
+  res <- array("", dim(roc.res$ROC))
+  res[, x] <- "--"
+  wc <- attr(opvals, "whichCol")
+  res[, matchCol(wc, x)] <- opstars[, isCol(wc, x)]
+  res
+})
+
+vehicle_stars <- omasks[[7]] %>%
+  `colnames<-`(colnames(roc.res$ROC)) %>%
+  `rownames<-`(rownames(roc.res$ROC)) %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "feature") %>%
+  pivot_longer(!feature,values_to='v_star', names_to='sample')
+
+
+roc_df <- left_join(roc_df_tmp2 %>%  mutate(jj=paste0(feature,'_',sample)),
+                    vehicle_stars%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(v_star,jj)),
+                    by='jj') %>% mutate(jj=NULL)
+
+
+####
 
 
 roc_df %>%
   ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
-  geom_text(aes(label = pval_txt), color = "black", size = 5, nudge_y = -0.15)+
+  #geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
+  geom_text(aes(label = v_star), color = "black", size = 5, nudge_y = -0.15)+
   theme_classic() +
   scale_y_discrete(labels=roc_df$feature_concentration,breaks=roc_df$feature,expand = c(0,0))+
   labs(fill="ROC area",title="Genomic heatmap") +

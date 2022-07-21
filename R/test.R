@@ -79,8 +79,15 @@ histone_roc_features <- c('H3K4me1',
 bound_roc_features <- c('PolII',
                         'DnaseUwJurkat',
                         'CTCF',
-                        'ActivatedNucleosomes',
-                        'Act_CD4_HDAC6',
+                        'RestingNucleosomes',
+                        'Rest_CD4_HDAC1',
+                        'Rest_CD4_HDAC2',
+                        'Rest_CD4_HDAC3',
+                        'Rest_CD4_HDAC6',
+                        'Rest_CD4_CBP',
+                        'Rest_CD4_PCAF',
+                        'Rest_CD4_p300',
+                        'Rest_CD4_MOF',
                         'Act_CD4_Tip60')
 
 intSites <- readRDS("20220714_ViiV_insites_plus_sampleinfo.rds")
@@ -257,15 +264,12 @@ vehicle_stars <- omasks[[7]] %>%
   rownames_to_column(var = "feature") %>%
   pivot_longer(!feature,values_to='v_star', names_to='sample')
 
-vehicle_stars
-
 his_roc_df <- left_join(his_roc_df %>% filter(feature_name %in% histone_roc_features) %>%
                           mutate(jj=paste0(feature,'_',sample)),
                         vehicle_stars%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(v_star,jj)),
                         by='jj') %>%
   mutate(jj=NULL)
 
-ROCSVG()
 ###
 
 
@@ -333,7 +337,7 @@ dev.off()
 
 #### bound ------------
 
-
+bound_order <- outer(rev(bound_roc_features),c('.1Mb','.10Kb','.1Kb'),paste0) %>% t() %>%  as.vector()
 
 bp_roc_df <- left_join(roc_df %>% filter(feature_name %in% bound_roc_features) %>%
                           mutate(jj=paste0(feature,'_',sample)),
@@ -341,18 +345,24 @@ bp_roc_df <- left_join(roc_df %>% filter(feature_name %in% bound_roc_features) %
                         by='jj') %>%
   mutate(jj=NULL)
 
-bp_roc_df <- left_join(bp_roc_df %>% filter(feature_name %in% bound_roc_features) %>%
+bp_roc_df<- left_join(bp_roc_df %>% filter(feature_name %in% bound_roc_features) %>%
                          mutate(jj=paste0(feature,'_',sample)),
                        vehicle_stars %>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(v_star,jj)),
                        by='jj') %>%
-  mutate(jj=NULL)
+  mutate(jj=NULL) %>%
+  mutate(feature_name=factor(feature_name,bound_roc_features))
+  #mutate(feature=factor(as.character(feature),bound_order)) %>%
 
+
+
+popo <- bp_roc_df %>%
+  mutate(feature=factor(as.character(feature),bound_order))
 
 bp_roc_df %>%
   ggplot( aes(y=feature,x=sample, fill= val)) +
   geom_tile() +
   #geom_text(aes(label = pval_txt), color = "black", size = 3, nudge_y = -0.15)+
-  geom_text(aes(label = v_star), color = "black", size = 3, nudge_y = -0.15)+
+  geom_text(aes(label = v_star), color = "black", size = 5, nudge_y = -0.15)+
   theme_classic() +
   scale_y_discrete(labels=bp_roc_df$feature_concentration,breaks=bp_roc_df$feature,expand = c(0,0))+
   labs(fill="ROC area",title="Bound protein heatmap") +
@@ -383,22 +393,34 @@ pdf(file='bound_protein_heatmap.pdf',width = 8.5,height = 11)
 #vp <- viewport(width = unit(7.5, "inches"), height = unit(10, "inches"))
 #pushViewport(vp)
 grid::grid.draw(pp2)
-y1<-0.07
-dy<-0.1425
-ddy<-0.008
+kk <-13
+yt <- 0.03
+y1<-0.067
 dx <- 0.01
-xx <- 0.255
+ddy<-0.008
+
+#dy<-0.1425
+dy<- (1-y1-yt-kk*ddy)/kk
+
+xx <- 0.242
 ll <-1
+#guide
+#grid.lines(x=c(xx-0.2,xx+0.2),y=c(y1,y1),gp=grid::gpar(lwd=ll))
+
+y1 <- y1+ddy/2
 grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
 grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
 grid.lines(x=c(xx,xx+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=ll))
 #grid.lines(x=c(xx-dx,xx+dx),y=c(y1+dy/2,y1+dy/2),gp=grid::gpar(lwd=ll))
-for (val in 1:5) {
+for (val in 1:(kk-1)) {
   y1<-y1+ddy+dy
   grid.lines(x=c(xx,xx),y=c(y1,y1+dy),gp=grid::gpar(lwd=ll))
   grid.lines(x=c(xx,xx+dx),y=c(y1,y1),gp=grid::gpar(lwd=ll))
   grid.lines(x=c(xx,xx+dx),y=c(y1+dy,y1+dy),gp=grid::gpar(lwd=ll))
 #  grid.lines(x=c(xx-dx,xx+dx),y=c(y1+dy/2,y1+dy/2),gp=grid::gpar(lwd=ll))
 }
+#guide
+y1 <- y1+dy+ddy/2
+#grid.lines(x=c(xx-0.2,xx+0.2),y=c(y1,y1),gp=grid::gpar(lwd=ll))
 dev.off()
 
