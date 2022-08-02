@@ -10,4 +10,10 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Imports: 
-    hotROCs
+    dplyr,
+    GenomicRanges,
+    hiAnnotator,
+    hotROCs,
+    intSiteRetriever
+Depends: 
+    R (>= 2.10)

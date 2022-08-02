@@ -7,6 +7,6 @@
 #' @examples
 #' x <- epi_heatmap()
 epi_heatmap <- function(){
-
+  head(ViiV_IntSites)
 
 }
