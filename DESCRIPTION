@@ -10,12 +10,17 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Imports: 
+    BiocGenerics,
+    BSgenome.Hsapiens.UCSC.hg38,
     dplyr,
     GenomeInfoDb,
     GenomicRanges,
     hiAnnotator,
     hotROCs,
     intSiteRetriever,
-    tibble
+    magrittr,
+    rlang,
+    tibble,
+    tidyselect
 Depends: 
     R (>= 2.10)

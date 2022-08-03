@@ -3,4 +3,5 @@
 export(epi_heatmap)
 importFrom(GenomeInfoDb,seqlengths)
 importFrom(magrittr,"%>%")
+importFrom(rlang,.data)
 importFrom(tibble,data_frame)

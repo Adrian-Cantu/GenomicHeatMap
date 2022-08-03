@@ -7,7 +7,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom GenomeInfoDb seqlengths
 #' @importFrom tibble data_frame
-#'
+#' @importFrom rlang .data
 #' @examples
 #' x <- epi_heatmap()
 epi_heatmap <- function(){
@@ -16,39 +16,27 @@ epi_heatmap <- function(){
 
   intSites_coor <- ViiV_IntSites %>%
     BiocGenerics::as.data.frame() %>%
-    dplyr::filter(to_heatmap) %>%
-    dplyr::select(c(seqnames,start,end,strand,patient,GTSP,Drug,concentration_nM,concentration_txt,Replicate)) %>%
+    dplyr::filter(.data$to_heatmap) %>%
+    dplyr::select(c(.data$seqnames,.data$start,.data$end,.data$strand,.data$GTSP,.data$Drug,
+                    .data$concentration_nM,.data$concentration_txt,.data$Replicate)) %>%
     dplyr::mutate(type='insertion') %>%
-    dplyr::group_by(seqnames) %>%
+    dplyr::mutate(patient=paste0(.data$Drug,'_',.data$concentration_txt)) %>%
+    dplyr::group_by(.data$seqnames) %>%
     dplyr::slice_sample(n=30,replace = TRUE)
 
   #set how the groups are defined by changeing patient
-  group_vector<-paste0(intSites_coor$Drug,'_',intSites_coor$concentration_txt)
-  intSites_coor$patient <- group_vector
+  group_vector <- intSites_coor$patient
+
+#
+#   df_to_randomize <- tibble::tibble(.rows = nrow(intSites_coor)) %>%
+#     dplyr::mutate(siteID=dplyr::row_number()) %>%
+#     dplyr::mutate(gender='m')
 
 
-  df_to_randomize <- tibble::tibble(.rows = nrow(intSites_coor)) %>%
-    dplyr::mutate(siteID=dplyr::row_number()) %>%
-    dplyr::mutate(gender='m')
 
-
-  genome_sequence <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
-  genome_sequence@user_seqnames <- genome_sequence@user_seqnames[genome_sequence@user_seqnames %in% paste0("chr", c(1:22, "X", "Y", "M"))]
-  genome_sequence@seqinfo <- genome_sequence@seqinfo[paste0("chr", c(1:22, "X", "Y", "M"))]
-
-
-  set.seed(as.numeric(Sys.time()))
-  ## really need to remove this dependency
-  ttt<-intSiteRetriever::get_N_MRCs(df_to_randomize,genome_sequence)
-
-  tttt <- ttt %>%
-    dplyr::rename(start=position) %>%
-    dplyr::mutate(end=start) %>%
-    dplyr::mutate(siteID=NULL) %>%
-    dplyr::relocate(strand,.after = last_col()) %>%
+  tttt <- get_random_human_positions( nn = intSites_coor %>% nrow() *3) %>%
     dplyr::mutate(patient=rep(group_vector,3)) %>%
-    dplyr::mutate(type='match') %>%
-    dplyr::rename(seqnames=chr)
+    dplyr::mutate(type='match')
 
   to_get_features <- rbind(intSites_coor %>% dplyr::select(colnames(tttt)) ,tttt)
 
