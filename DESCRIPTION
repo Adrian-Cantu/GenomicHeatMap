@@ -18,7 +18,9 @@ Imports:
     hiAnnotator,
     hotROCs,
     magrittr,
+    purrr,
     rlang,
+    stringr,
     tibble,
     tidyselect
 Depends: 

@@ -6,7 +6,6 @@
 #'
 #' @importFrom magrittr %>%
 #' @importFrom GenomeInfoDb seqlengths
-#' @importFrom tibble data_frame
 #' @importFrom rlang .data
 #' @examples
 #' x <- epi_heatmap()
