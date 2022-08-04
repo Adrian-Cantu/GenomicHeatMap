@@ -26,13 +26,4 @@ get_random_human_positions <- function(nn=10) {
     end=position,
     strand=strand
   )
-
-  # tttt <- ttt %>%
-  #   dplyr::rename(start=.data$position) %>%
-  #   dplyr::mutate(end=.data$start) %>%
-  #   dplyr::mutate(siteID=NULL) %>%
-  #   dplyr::relocate(.data$strand,.after = tidyselect::last_col()) %>%
-  #   dplyr::mutate(patient=rep(group_vector,3)) %>%
-  #   dplyr::mutate(type='match') %>%
-  #   dplyr::rename(seqnames=.data$chr)
 }
