@@ -1,0 +1,41 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# GenomicHeatMap
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+GenomicHeatMap is used to generate genomics and epigeniomic heatmaps from insertion sites
+
+## Installation
+
+You can install the development version of GenomicHeatMap from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("Adrian-Cantu/GenomicHeatMap")
+```
+
+## Example
+
+You can get an epigenomic heatmap plot, 
+
+```{r example}
+library(GenomicHeatMap)
+#intsite_to_heatmap_df(intSites) %>% epi_annotate_df() -> hh
+#hh %>% make_roc() %>% make_heatmap(title='nice heatmap')
+```
+
