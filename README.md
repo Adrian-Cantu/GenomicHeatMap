@@ -28,8 +28,6 @@ library(GenomicHeatMap)
 library(GenomeInfoDb)
 intsite_to_heatmap_df(sample_intSites) %>%
   epi_annotate_df() %>%
-  #as.data.frame() %>% 
-  #filter(if_any(everything(), is.na))
   make_roc() %>%
   make_heatmap(title='nice heatmap')
 ```
