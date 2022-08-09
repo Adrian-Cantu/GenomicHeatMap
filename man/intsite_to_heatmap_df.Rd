@@ -18,6 +18,3 @@ naive declaration
 \description{
 Format
 }
-\examples{
-x <- epi_heatmap()
-}

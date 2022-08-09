@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_heatmap.R
 \name{epi_annotate_df}
 \alias{epi_annotate_df}
-\title{Title}
+\title{Title adds anotation columns to dataframe}
 \usage{
 epi_annotate_df(feature_df)
 }
@@ -13,5 +13,5 @@ epi_annotate_df(feature_df)
 tum
 }
 \description{
-Title
+Title adds anotation columns to dataframe
 }

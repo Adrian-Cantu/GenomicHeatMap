@@ -1,10 +1,10 @@
 Package: GenomicHeatMap
-Title: Generates heatmaps from insertion sites.
+Title: Generates heatmaps from insertion sites
 Version: 0.1
 Authors@R: 
     person("Vito Adrian", "Cantu", , "vito@adrian-cantu.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-3168-5140"))
-Description: GenomicHeatMap is used to generate genomics and epigeniomic heatmaps from insertion sites
+Description: GenomicHeatMap is used to generate genomics and epigeniomic heatmaps from insertion sites.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -16,16 +16,19 @@ Imports:
     dplyr,
     GenomeInfoDb,
     GenomicRanges,
+    ggplot2,
     grid,
     hiAnnotator,
     hotROCs,
     magrittr,
     purrr,
     rlang,
+    stats,
     stringr,
     tibble,
     tidyr,
-    tidyselect
+    tidyselect,
+    utils
 Depends: 
     R (>= 2.10)
 LazyData: true

@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_heatmap.R
 \name{make_roc}
 \alias{make_roc}
-\title{Title}
+\title{Title makes roc object from dataframe}
 \usage{
 make_roc(annotate_df)
 }
@@ -10,8 +10,8 @@ make_roc(annotate_df)
 \item{annotate_df}{a dataframe}
 }
 \value{
-
+ROC object
 }
 \description{
-Title
+Title makes roc object from dataframe
 }

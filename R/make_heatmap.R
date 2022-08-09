@@ -1,4 +1,4 @@
-#' Title
+#' Title adds anotation columns to dataframe
 #'
 #' @param feature_df datafram with real and random sites
 #'
@@ -29,62 +29,74 @@ epi_annotate_df <- function(feature_df){
 #' @param ... a vector
 #'
 #' @return a sorted vector
-#'
+#' @importFrom rlang .data
+#' @importFrom magrittr %>%
 sort_features <- function(...){
-  translate_window <- setNames(c(1000,1000000), c("Kb", "Mb"))
-  xx <- tibble(.rows = length(unique(as.vector(...)))) %>%
+  translate_window <- stats::setNames(c(1000,1000000), c("Kb", "Mb"))
+  xx <- tibble::tibble(.rows = length(unique(as.vector(...)))) %>%
     dplyr::mutate(site=unique(as.vector(...))) %>%
-    tidyr::separate(site,into=c('fname','window'),sep = '\\.',remove = FALSE) %>%
-    tidyr::separate(window,into=c('size','todel'),sep = '\\D+$',remove = FALSE) %>%
-    tidyr::separate(window,into=c('todel','size_word'),sep = '^\\d+',remove = FALSE) %>%
-    mutate(size_mult=translate_window[size_word]) %>%
-    mutate(size_sort=as.numeric(size)*size_mult) %>%
-    mutate(todel=NULL) %>%
-    dplyr::arrange(fname,rev(size_sort)) %>%
-    dplyr::pull(var = site)
+    tidyr::separate(.data$site,into=c('fname','window'),sep = '\\.',remove = FALSE) %>%
+    tidyr::separate(.data$window,into=c('size','todel'),sep = '\\D+$',remove = FALSE) %>%
+    tidyr::separate(.data$window,into=c('todel','size_word'),sep = '^\\d+',remove = FALSE) %>%
+    dplyr::mutate(size_mult=translate_window[.data$size_word]) %>%
+    dplyr::mutate(size_sort=as.numeric(.data$size)*.data$size_mult) %>%
+    dplyr::mutate(todel=NULL) %>%
+    dplyr::arrange(.data$fname,rev(.data$size_sort)) %>%
+    dplyr::pull(var = .data$site)
   toret <- factor(as.vector(...),xx)
   return(toret)
 }
 
 
 
-#' Title
+#' Title makes roc object from dataframe
 #'
 #' @param annotate_df a dataframe
 #'
-#' @return
+#' @return ROC object
 #' @export
-make_roc <- function(annotate_df){
+#'
+#'
+#' @importFrom rlang .data
+#' @importFrom magrittr %>%
 
-  to_roc_df <-as.data.frame(annotate_df) %>% replace(is.na(.), 0)
+make_roc <- function(annotate_df){
+  #utils::globalVariables("where")
+  to_roc_df <-as.data.frame(annotate_df) %>%
+    dplyr::mutate(dplyr::across(where(is.numeric), ~tidyr::replace_na(.x, 0)))
+  #%>% replace_na(0) #replace(is.na(.data), 0)
 
   roc.res <- hotROCs::ROC.ORC(
     response = to_roc_df$type,
-    variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,heat_group,type)),
+    variables = to_roc_df %>% dplyr::select(-c(.data$seqnames,.data$start,.data$end,
+                                        .data$width,.data$strand,.data$heat_group,.data$type)),
     origin=to_roc_df$heat_group)
 
   return(roc.res)
 }
 
 
-#' Title fg
+#' makes heatmap figures
 #'
-#' @param roc.res fert
+#' @param roc.res roc object
+#' @param title title to display on the figure
 #'
-#' @return
+#' @return a ggplot
 #' @export
+#'
+#' @importFrom rlang .data
 make_heatmap <- function(roc.res,title='heatmap'){
 
   roc_df <- roc.res$ROC %>%
     as.data.frame() %>%
     tibble::rownames_to_column(var = "feature") %>%
-    tidyr::pivot_longer(!feature,values_to='val', names_to='sample') %>%
-    dplyr::mutate(feature=sort_features(feature)) %>%
-    tidyr::separate(feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
+    tidyr::pivot_longer(!.data$feature,values_to='val', names_to='sample') %>%
+    dplyr::mutate(feature=sort_features(.data$feature)) %>%
+    tidyr::separate(.data$feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
 
 
   roc_df %>%
-    ggplot2::ggplot( ggplot2::aes(y=feature,x=sample, fill= val)) +
+    ggplot2::ggplot( ggplot2::aes(y=.data$feature,x=.data$sample, fill= .data$val)) +
     ggplot2::geom_tile() +
     ggplot2::theme_classic() +
     ggplot2::labs(fill="ROC area",title=title) +
@@ -105,7 +117,7 @@ make_heatmap <- function(roc.res,title='heatmap'){
           plot.background = ggplot2::element_blank(),
           axis.ticks.length.y.left=grid::unit(0.1,'line'),
           axis.title.y=ggplot2::element_blank()) +
-    ggplot2::facet_grid(rows=vars(roc_df$feature_name),scales = "free_y",switch = 'y')+
+    ggplot2::facet_grid(rows=ggplot2::vars(roc_df$feature_name),scales = "free_y",switch = 'y')+
     ggplot2::scale_x_discrete(expand = c(0,0)) +
     ggplot2::scale_y_discrete(labels=roc_df$feature_concentration,breaks=roc_df$feature,expand = c(0,0))
 

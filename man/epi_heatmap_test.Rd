@@ -12,6 +12,3 @@ naive declaration
 \description{
 Title of the song
 }
-\examples{
-x <- epi_heatmap()
-}

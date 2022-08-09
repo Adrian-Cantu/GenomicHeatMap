@@ -21,10 +21,17 @@ devtools::install_github("Adrian-Cantu/GenomicHeatMap")
 
 ## Example
 
-You can get an epigenomic heatmap plot,
+This should work out of the box:
 
 ``` r
 library(GenomicHeatMap)
-#intsite_to_heatmap_df(intSites) %>% epi_annotate_df() -> hh
-#hh %>% make_roc() %>% make_heatmap(title='nice heatmap')
+library(GenomeInfoDb)
+intsite_to_heatmap_df(sample_intSites) %>%
+  epi_annotate_df() %>%
+  #as.data.frame() %>% 
+  #filter(if_any(everything(), is.na))
+  make_roc() %>%
+  make_heatmap(title='nice heatmap')
 ```
+
+<img src="man/figures/README-example-1.png" width="100%" />

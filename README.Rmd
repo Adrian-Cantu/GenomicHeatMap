@@ -11,6 +11,8 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+library(tidyverse)
+
 ```
 
 # GenomicHeatMap
@@ -31,11 +33,16 @@ devtools::install_github("Adrian-Cantu/GenomicHeatMap")
 
 ## Example
 
-You can get an epigenomic heatmap plot, 
+This should work out of the box:
 
-```{r example}
+```{r example, message=FALSE, warning=FALSE}
 library(GenomicHeatMap)
-#intsite_to_heatmap_df(intSites) %>% epi_annotate_df() -> hh
-#hh %>% make_roc() %>% make_heatmap(title='nice heatmap')
+library(GenomeInfoDb)
+intsite_to_heatmap_df(sample_intSites) %>%
+  epi_annotate_df() %>%
+  #as.data.frame() %>% 
+  #filter(if_any(everything(), is.na))
+  make_roc() %>%
+  make_heatmap(title='nice heatmap')
 ```
 

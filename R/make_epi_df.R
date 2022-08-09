@@ -7,8 +7,6 @@
 #' @importFrom magrittr %>%
 #' @importFrom GenomeInfoDb seqlengths
 #' @importFrom rlang .data
-#' @examples
-#' x <- epi_heatmap()
 epi_heatmap_test <- function(){
 
   cc <- c('DnaseUwJurkat','H3K79me2','PolII')
@@ -58,8 +56,6 @@ epi_heatmap_test <- function(){
 #' @importFrom magrittr %>%
 #' @importFrom GenomeInfoDb seqlengths
 #' @importFrom rlang .data
-#' @examples
-#' x <- epi_heatmap()
 intsite_to_heatmap_df <- function(intSites,group_variable='patient'){
 
   cc <- c('DnaseUwJurkat','H3K79me2','PolII')

@@ -2,16 +2,18 @@
 % Please edit documentation in R/make_heatmap.R
 \name{make_heatmap}
 \alias{make_heatmap}
-\title{Title fg}
+\title{makes heatmap figures}
 \usage{
 make_heatmap(roc.res, title = "heatmap")
 }
 \arguments{
-\item{roc.res}{fert}
+\item{roc.res}{roc object}
+
+\item{title}{title to display on the figure}
 }
 \value{
-
+a ggplot
 }
 \description{
-Title fg
+makes heatmap figures
 }
