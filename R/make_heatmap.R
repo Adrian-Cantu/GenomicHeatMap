@@ -33,15 +33,15 @@ epi_annotate_df <- function(feature_df){
 sort_features <- function(...){
   translate_window <- setNames(c(1000,1000000), c("Kb", "Mb"))
   xx <- tibble(.rows = length(unique(as.vector(...)))) %>%
-    mutate(site=unique(as.vector(...))) %>%
-    separate(site,into=c('fname','window'),sep = '\\.',remove = FALSE) %>%
-    separate(window,into=c('size','todel'),sep = '\\D+$',remove = FALSE) %>%
-    separate(window,into=c('todel','size_word'),sep = '^\\d+',remove = FALSE) %>%
+    dplyr::mutate(site=unique(as.vector(...))) %>%
+    tidyr::separate(site,into=c('fname','window'),sep = '\\.',remove = FALSE) %>%
+    tidyr::separate(window,into=c('size','todel'),sep = '\\D+$',remove = FALSE) %>%
+    tidyr::separate(window,into=c('todel','size_word'),sep = '^\\d+',remove = FALSE) %>%
     mutate(size_mult=translate_window[size_word]) %>%
     mutate(size_sort=as.numeric(size)*size_mult) %>%
     mutate(todel=NULL) %>%
-    arrange(fname,rev(size_sort)) %>%
-    pull(var = site)
+    dplyr::arrange(fname,rev(size_sort)) %>%
+    dplyr::pull(var = site)
   toret <- factor(as.vector(...),xx)
   return(toret)
 }
@@ -84,29 +84,29 @@ make_heatmap <- function(roc.res,title='heatmap'){
 
 
   roc_df %>%
-    ggplot2::ggplot( aes(y=feature,x=sample, fill= val)) +
-    geom_tile() +
-    theme_classic() +
-    labs(fill="ROC area",title=title) +
-    scale_fill_gradientn(colours=c('blue','grey90','red'),
+    ggplot2::ggplot( ggplot2::aes(y=feature,x=sample, fill= val)) +
+    ggplot2::geom_tile() +
+    ggplot2::theme_classic() +
+    ggplot2::labs(fill="ROC area",title=title) +
+    ggplot2::scale_fill_gradientn(colours=c('blue','grey90','red'),
                          na.value = "transparent",
                          breaks=c(0,0.5,1),
                          labels=c(0,0.5,1),
                          limits=c(0,1)) +
-    theme(axis.text.x = element_text(angle = 30,vjust = 1, hjust=1),
-          axis.text.y.left = element_text(size=9),
-          axis.title.x=element_blank(),
-          panel.spacing.y = unit(-0.15, "line"),
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 30,vjust = 1, hjust=1),
+          axis.text.y.left = ggplot2::element_text(size=9),
+          axis.title.x=ggplot2::element_blank(),
+          panel.spacing.y = grid::unit(-0.15, "line"),
           strip.placement='outside',
-          panel.border = element_blank(),
-          panel.background= element_blank(),
-          strip.background = element_blank(),
-          strip.text.y.left = element_text(angle=0,size=10),
-          plot.background = element_blank(),
-          axis.ticks.length.y.left=unit(0.1,'line'),
-          axis.title.y=element_blank()) +
-    facet_grid(rows=vars(roc_df$feature_name),scales = "free_y",switch = 'y')+
-    scale_x_discrete(expand = c(0,0)) +
-    scale_y_discrete(labels=roc_df$feature_concentration,breaks=roc_df$feature,expand = c(0,0))
+          panel.border = ggplot2::element_blank(),
+          panel.background= ggplot2::element_blank(),
+          strip.background = ggplot2::element_blank(),
+          strip.text.y.left = ggplot2::element_text(angle=0,size=10),
+          plot.background = ggplot2::element_blank(),
+          axis.ticks.length.y.left=grid::unit(0.1,'line'),
+          axis.title.y=ggplot2::element_blank()) +
+    ggplot2::facet_grid(rows=vars(roc_df$feature_name),scales = "free_y",switch = 'y')+
+    ggplot2::scale_x_discrete(expand = c(0,0)) +
+    ggplot2::scale_y_discrete(labels=roc_df$feature_concentration,breaks=roc_df$feature,expand = c(0,0))
 
 }

@@ -9,7 +9,7 @@
 #' @importFrom rlang .data
 #' @examples
 #' x <- epi_heatmap()
-epi_heatmap <- function(){
+epi_heatmap_test <- function(){
 
   cc <- c('DnaseUwJurkat','H3K79me2','PolII')
 
@@ -46,3 +46,42 @@ epi_heatmap <- function(){
   return(to_get_features)
 
 }
+
+#' Format
+#'
+#' @param intSites insertion site dataframe
+#' @param group_variable variable that will be use to group the data, each value corresponds to a
+#' column in the final heatmap
+#'
+#' @return naive declaration
+#' @export
+#'
+#' @importFrom magrittr %>%
+#' @importFrom GenomeInfoDb seqlengths
+#' @importFrom rlang .data
+#' @examples
+#' x <- epi_heatmap()
+intsite_to_heatmap_df <- function(intSites,group_variable='patient'){
+
+  cc <- c('DnaseUwJurkat','H3K79me2','PolII')
+  #intsites_df <- intSites %>%  BiocGenerics::as.data.frame()
+
+  intSites_coor <- intSites %>%
+    BiocGenerics::as.data.frame() %>%
+    dplyr::select(c(.data$seqnames,.data$start,.data$end,.data$strand,.data[[group_variable]])) %>%
+    dplyr::mutate(type='insertion') %>%
+    dplyr::rename(heat_group=.data[[group_variable]])
+
+  group_vector <- intSites_coor$heat_group
+
+  tttt <- get_random_human_positions( nn = intSites_coor %>% nrow() *3) %>%
+    dplyr::mutate(heat_group=rep(group_vector,3)) %>%
+    dplyr::mutate(type='match')
+
+  to_get_features <- rbind(intSites_coor %>% dplyr::select(colnames(tttt)) ,tttt)
+
+  return(intSites_coor)
+}
+
+# intsite_to_heatmap_df(intSites) %>% epi_annotate_df() -> hh
+# hh %>% make_roc() %>% make_heatmap(title='nice heatmap')
