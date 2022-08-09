@@ -21,11 +21,10 @@ epi_heatmap_test <- function(){
     dplyr::mutate(type='insertion') %>%
     dplyr::mutate(patient=paste0(.data$Drug,'_',.data$concentration_txt)) %>%
     dplyr::group_by(.data$seqnames) %>%
-    dplyr::slice_sample(n=30,replace = TRUE)
+    dplyr::slice_sample(n=30,replace = TRUE) %>%
+    dplyr::rename(heat_group=.data$patient)
 
-  #set how the groups are defined by changeing patient
-  group_vector <- intSites_coor$patient
-
+  group_vector <- intSites_coor$heat_group
 #
 #   df_to_randomize <- tibble::tibble(.rows = nrow(intSites_coor)) %>%
 #     dplyr::mutate(siteID=dplyr::row_number()) %>%
@@ -34,7 +33,7 @@ epi_heatmap_test <- function(){
 
 
   tttt <- get_random_human_positions( nn = intSites_coor %>% nrow() *3) %>%
-    dplyr::mutate(patient=rep(group_vector,3)) %>%
+    dplyr::mutate(heat_group=rep(group_vector,3)) %>%
     dplyr::mutate(type='match')
 
   to_get_features <- rbind(intSites_coor %>% dplyr::select(colnames(tttt)) ,tttt)
@@ -70,7 +69,8 @@ intsite_to_heatmap_df <- function(intSites,group_variable='patient'){
     BiocGenerics::as.data.frame() %>%
     dplyr::select(c(.data$seqnames,.data$start,.data$end,.data$strand,.data[[group_variable]])) %>%
     dplyr::mutate(type='insertion') %>%
-    dplyr::rename(heat_group=.data[[group_variable]])
+    dplyr::rename(heat_group=.data[[group_variable]]) #%>%
+    #dplyr::filter(seqnames!='chrM')
 
   group_vector <- intSites_coor$heat_group
 
@@ -80,8 +80,6 @@ intsite_to_heatmap_df <- function(intSites,group_variable='patient'){
 
   to_get_features <- rbind(intSites_coor %>% dplyr::select(colnames(tttt)) ,tttt)
 
-  return(intSites_coor)
+  return(to_get_features)
 }
 
-# intsite_to_heatmap_df(intSites) %>% epi_annotate_df() -> hh
-# hh %>% make_roc() %>% make_heatmap(title='nice heatmap')

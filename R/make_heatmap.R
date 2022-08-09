@@ -60,8 +60,8 @@ make_roc <- function(annotate_df){
 
   roc.res <- hotROCs::ROC.ORC(
     response = to_roc_df$type,
-    variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,patient,type)),
-    origin=to_roc_df$patient)
+    variables = to_roc_df %>% select(-c(seqnames,start,end,width,strand,heat_group,type)),
+    origin=to_roc_df$heat_group)
 
   return(roc.res)
 }
