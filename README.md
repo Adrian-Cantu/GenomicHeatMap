@@ -4,6 +4,8 @@
 # GenomicHeatMap
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/Adrian-Cantu/GenomicHeatMap/workflows/R-CMD-check/badge.svg)](https://github.com/Adrian-Cantu/GenomicHeatMap/actions)
 <!-- badges: end -->
 
 GenomicHeatMap is used to generate genomics and epigeniomic heatmaps
