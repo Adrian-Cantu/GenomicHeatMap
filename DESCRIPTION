@@ -9,7 +9,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
-Remotes: github::BushmanLab/hotROCs
+Remotes: github::Adrian-Cantu/hotROCs,
+    github::Adrian-Cantu/hiAnnotator
 biocViews:
 Imports: 
     BiocGenerics,
