@@ -24,6 +24,43 @@ epi_annotate_df <- function(feature_df){
 }
 
 
+#' Title adds anotation columns to dataframe
+#'
+#' @param ff_df datafram with real and random sites
+#'
+#' @return tum
+#' @export
+#'
+#' @importFrom GenomeInfoDb keepSeqlevels
+#'
+epi_annotate_df2 <- function(ff_df){
+  epifiles_tmp <- list.files(system.file("exdata", package = "GenomicHeatMap"))
+  epifiles <- epifiles_tmp[grepl('\\.rds$',epifiles_tmp)]
+  names(epifiles) <- epifiles %>% stringr::str_remove(".rds")
+  epinames <- names(epifiles)
+  ll_names <- outer(epinames, c('1Kb','10Kb','1Mb'), paste, sep=".") %>%
+    t() %>%
+    as.vector()
+  epi_df <- matrix(0,nrow = nrow(ff_df),ncol = length(ll_names),dimnames = list(NULL,ll_names)) %>%
+    tibble::as_tibble()
+  ff_gr <- ff_df %>% GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = TRUE)
+
+  for (ll in 1:length(epifiles)) {
+    x <- epifiles[ll]
+    name<-names(epifiles)[ll]
+    xx <- readRDS(system.file("exdata",x,package = "GenomicHeatMap"))
+    nums   <- c(1000,10000,1000000)
+    nums_l <- c('1Kb','10Kb','1Mb')
+    for (lll in 1:length(nums)) {
+      GenomicRanges::countOverlaps(ff_gr,xx, maxgap = nums[lll]/2, ignore.strand = TRUE) ->
+        epi_df[,paste(name,nums_l[lll],sep = '.')] #
+
+    }
+  }
+  return(cbind(ff_df,epi_df) %>% GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = TRUE))
+}
+
+
 #' Title sort feature
 #'
 #' @param ... a vector
