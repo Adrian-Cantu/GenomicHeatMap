@@ -29,7 +29,7 @@ This should work out of the box:
 library(GenomicHeatMap)
 library(GenomeInfoDb)
 intsite_to_heatmap_df(sample_intSites) %>%
-  epi_annotate_df() %>%
+  epi_annotate_df2() %>%
   make_roc() %>%
   make_heatmap(title='nice heatmap')
 ```

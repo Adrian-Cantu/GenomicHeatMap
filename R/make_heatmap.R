@@ -33,8 +33,8 @@ epi_annotate_df <- function(feature_df){
 #'
 #' @importFrom GenomeInfoDb keepSeqlevels
 #'
-epi_annotate_df2 <- function(ff_df){
-  epifiles_tmp <- list.files(system.file("exdata", package = "GenomicHeatMap"))
+epi_annotate_df2 <- function(ff_df,epi_directory = system.file("exdata", package = "GenomicHeatMap")){
+  epifiles_tmp <- list.files(epi_directory)
   epifiles <- epifiles_tmp[grepl('\\.rds$',epifiles_tmp)]
   names(epifiles) <- epifiles %>% stringr::str_remove(".rds")
   epinames <- names(epifiles)
@@ -48,7 +48,7 @@ epi_annotate_df2 <- function(ff_df){
   for (ll in 1:length(epifiles)) {
     x <- epifiles[ll]
     name<-names(epifiles)[ll]
-    xx <- readRDS(system.file("exdata",x,package = "GenomicHeatMap"))
+    xx <- readRDS(file=file.path(epi_directory,x))
     nums   <- c(1000,10000,1000000)
     nums_l <- c('1Kb','10Kb','1Mb')
     for (lll in 1:length(nums)) {
