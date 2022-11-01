@@ -4,10 +4,15 @@
 \alias{epi_annotate_df}
 \title{Title adds anotation columns to dataframe}
 \usage{
-epi_annotate_df(feature_df)
+epi_annotate_df(
+  feature_df,
+  epi_directory = system.file("exdata", package = "GenomicHeatMap")
+)
 }
 \arguments{
 \item{feature_df}{datafram with real and random sites}
+
+\item{epi_directory}{directory with .rds of the tracks}
 }
 \value{
 tum

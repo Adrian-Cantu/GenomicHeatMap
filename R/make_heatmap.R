@@ -1,20 +1,21 @@
 #' Title adds anotation columns to dataframe
 #'
 #' @param feature_df datafram with real and random sites
+#' @param epi_directory directory with .rds of the tracks
 #'
 #' @return tum
 #' @export
 #'
 #' @importFrom GenomeInfoDb keepSeqlevels
 #'
-epi_annotate_df <- function(feature_df){
+epi_annotate_df <- function(feature_df,epi_directory = system.file("exdata", package = "GenomicHeatMap")){
 
-  epifiles_tmp <- list.files(system.file("exdata", package = "GenomicHeatMap"))
+  epifiles_tmp <- list.files(epi_directory)
   epifiles <- epifiles_tmp[grepl('\\.rds$',epifiles_tmp)]
   names(epifiles) <- epifiles %>% stringr::str_remove(".rds")
 
   kk <- purrr::imap(epifiles, function(x,name){
-    xx <- readRDS(system.file("exdata",x,package = "GenomicHeatMap"))
+    xx <- readRDS(file = file.path(epi_directory,x))
     feature_df <<- hiAnnotator::getFeatureCounts(feature_df, xx, name)
     rm(xx)
     gc()
@@ -27,6 +28,7 @@ epi_annotate_df <- function(feature_df){
 #' Title adds anotation columns to dataframe
 #'
 #' @param ff_df datafram with real and random sites
+#' @param epi_directory directory with .rds of the tracks
 #'
 #' @return tum
 #' @export
