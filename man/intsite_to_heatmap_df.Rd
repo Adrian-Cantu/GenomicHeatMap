@@ -4,13 +4,19 @@
 \alias{intsite_to_heatmap_df}
 \title{Format}
 \usage{
-intsite_to_heatmap_df(intSites, group_variable = "patient")
+intsite_to_heatmap_df(
+  intSites,
+  group_variable = "patient",
+  r_seed = as.numeric(Sys.time())
+)
 }
 \arguments{
 \item{intSites}{insertion site dataframe}
 
-\item{group_variable}{variable that will be use to group the data, each value corresponds to a
+\item{group_variable}{variable that will be used to group the data, each value corresponds to a
 column in the final heatmap}
+
+\item{r_seed}{seed to use for generation of random control insertion sites}
 }
 \value{
 naive declaration

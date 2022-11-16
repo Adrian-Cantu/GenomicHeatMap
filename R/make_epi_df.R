@@ -47,8 +47,9 @@ epi_heatmap_test <- function(){
 #' Format
 #'
 #' @param intSites insertion site dataframe
-#' @param group_variable variable that will be use to group the data, each value corresponds to a
+#' @param group_variable variable that will be used to group the data, each value corresponds to a
 #' column in the final heatmap
+#' @param r_seed seed to use for generation of random control insertion sites
 #'
 #' @return naive declaration
 #' @export
@@ -56,10 +57,7 @@ epi_heatmap_test <- function(){
 #' @importFrom magrittr %>%
 #' @importFrom GenomeInfoDb seqlengths
 #' @importFrom rlang .data
-intsite_to_heatmap_df <- function(intSites,group_variable='patient'){
-
-  cc <- c('DnaseUwJurkat','H3K79me2','PolII')
-  #intsites_df <- intSites %>%  BiocGenerics::as.data.frame()
+intsite_to_heatmap_df <- function(intSites,group_variable='patient',r_seed=as.numeric(Sys.time())){
 
   intSites_coor <- intSites %>%
     BiocGenerics::as.data.frame() %>%
@@ -70,7 +68,7 @@ intsite_to_heatmap_df <- function(intSites,group_variable='patient'){
 
   group_vector <- intSites_coor$heat_group
 
-  tttt <- get_random_human_positions( nn = intSites_coor %>% nrow() *3) %>%
+  tttt <- get_random_human_positions( nn = intSites_coor %>% nrow() *3,r_seed=r_seed) %>%
     dplyr::mutate(heat_group=rep(group_vector,3)) %>%
     dplyr::mutate(type='match')
 

@@ -4,10 +4,12 @@
 \alias{get_random_human_positions}
 \title{Title}
 \usage{
-get_random_human_positions(nn = 10)
+get_random_human_positions(nn = 10, r_seed = as.numeric(Sys.time()))
 }
 \arguments{
 \item{nn}{number of randon site needed}
+
+\item{r_seed}{seed to use for generation of random control insertion sites}
 }
 \value{
 a tibble with the sites
