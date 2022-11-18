@@ -7,7 +7,8 @@
 intsite_to_heatmap_df(
   intSites,
   group_variable = "patient",
-  r_seed = as.numeric(Sys.time())
+  r_seed = as.numeric(Sys.time()),
+  genome = "hg38"
 )
 }
 \arguments{
@@ -17,6 +18,8 @@ intsite_to_heatmap_df(
 column in the final heatmap}
 
 \item{r_seed}{seed to use for generation of random control insertion sites}
+
+\item{genome}{genome to get random sites from. one of c('hg38','macFas5')}
 }
 \value{
 naive declaration
