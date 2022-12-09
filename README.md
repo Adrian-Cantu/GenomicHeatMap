@@ -31,7 +31,8 @@ library(GenomeInfoDb)
 intsite_to_heatmap_df(sample_intSites) %>%
   epi_annotate_df2() %>%
   make_roc() %>%
-  make_heatmap(title='nice heatmap')
+  make_heatmap(title='nice heatmap') %>% 
+  plot_heatmap()
 ```
 
 <img src="man/figures/README-example-1.png" width="100%" />
