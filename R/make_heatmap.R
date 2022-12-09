@@ -1,6 +1,6 @@
 #' Title adds anotation columns to dataframe
 #'
-#' @param feature_df datafram with real and random sites
+#' @param feature_df dataframe with real and random sites
 #' @param epi_directory directory with .rds of the tracks
 #'
 #' @return tum
@@ -118,13 +118,12 @@ make_roc <- function(annotate_df){
 #' makes heatmap figures
 #'
 #' @param roc.res roc object
-#' @param title title to display on the figure
 #'
 #' @return a ggplot
 #' @export
 #'
 #' @importFrom rlang .data
-make_heatmap <- function(roc.res,title='heatmap'){
+make_heatmap <- function(roc.res){
 
   roc_df <- roc.res$ROC %>%
     as.data.frame() %>%
@@ -133,31 +132,111 @@ make_heatmap <- function(roc.res,title='heatmap'){
     dplyr::mutate(feature=sort_features(.data$feature)) %>%
     tidyr::separate(.data$feature,into = c('feature_name','feature_concentration'),sep = '\\.',remove = FALSE)
 
+  # get stars for vehicle... code copied from Viiv project, needs much work -----------
 
-  roc_df %>%
+  mk.stars <- function(pvmat) {
+    x <- array("", dim(pvmat))
+    x[] <- as.character(cut(pvmat, c(0, 0.001, 0.01, 0.05,
+                                     1), c("***", "**", "*", ""), include.lowest = TRUE))
+    x
+  }
+
+  roc.rows <- nrow(roc.res$ROC)
+  roc.cols <- ncol(roc.res$ROC)
+
+  opvals <- roc.res$pvalues$op
+  opstars <- mk.stars(opvals)
+
+  matchCol <- function(x, indx) x[2:1, ][x == indx]
+  isCol <- function(x, indx) colSums(x == indx) == 1
+
+  omasks <- lapply(1:roc.cols, function(x) {
+    res <- array("", dim(roc.res$ROC))
+    res[, x] <- "--"
+    wc <- attr(opvals, "whichCol")
+    res[, matchCol(wc, x)] <- opstars[, isCol(wc, x)]
+    res
+  })
+
+
+
+  vehicle_stars <- omasks[[7]] %>%
+    `colnames<-`(colnames(roc.res$ROC)) %>%
+    `rownames<-`(rownames(roc.res$ROC)) %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "feature") %>%
+    pivot_longer(!feature,values_to='v_star', names_to='sample')
+
+  # # to add stars as text to dataframe ---------------
+  # ff_roc_df <- left_join(roc_df %>%  mutate(jj=paste0(feature,'_',sample)),
+  #                        vehicle_stars %>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(v_star,jj)),
+  #                        by='jj') %>%
+  #   mutate(jj=NULL)
+
+  #-----------------------------------
+  # code to get vs random stars
+
+  #-----------------------------------
+  stat_cuts <- c(0, 0.001, 0.01, 0.05, 1)
+  roc_pval <- roc.res$pvalues$np %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "feature") %>%
+    pivot_longer(!feature,values_to='pval', names_to='sample') %>%
+    mutate(feature=sort_features(feature)) %>%
+    mutate(v_star=cut(pval, stat_cuts, labels = c("***", " **", " * ", "   "),include.lowest = TRUE))
+
+  ff_roc_df <- left_join(roc_df %>% mutate(jj=paste0(feature,'_',sample)),
+                          roc_pval%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(pval,v_star,jj)),
+                          by='jj') %>%
+    mutate(jj=NULL)
+
+
+
+    return(ff_roc_df)
+}
+
+#' Title
+#'
+#' @param roc_df A dataframe generated from make_heatmap
+#' @param title A title for the plot
+#' @param star Whether to add pvalue significance as stars.
+#'
+#' @return a ggplot object
+#' @export
+#'
+plot_heatmap <- function(roc_df,title='heatmap',star=FALSE) {
+
+  plot_fig <- roc_df %>%
     ggplot2::ggplot( ggplot2::aes(y=.data$feature,x=.data$sample, fill= .data$val)) +
     ggplot2::geom_tile() +
     ggplot2::theme_classic() +
     ggplot2::labs(fill="ROC area",title=title) +
     ggplot2::scale_fill_gradientn(colours=c('blue','grey90','red'),
-                         na.value = "transparent",
-                         breaks=c(0,0.5,1),
-                         labels=c(0,0.5,1),
-                         limits=c(0,1)) +
+                                  na.value = "transparent",
+                                  breaks=c(0,0.5,1),
+                                  labels=c(0,0.5,1),
+                                  limits=c(0,1)) +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 30,vjust = 1, hjust=1),
-          axis.text.y.left = ggplot2::element_text(size=9),
-          axis.title.x=ggplot2::element_blank(),
-          panel.spacing.y = grid::unit(-0.15, "line"),
-          strip.placement='outside',
-          panel.border = ggplot2::element_blank(),
-          panel.background= ggplot2::element_blank(),
-          strip.background = ggplot2::element_blank(),
-          strip.text.y.left = ggplot2::element_text(angle=0,size=10),
-          plot.background = ggplot2::element_blank(),
-          axis.ticks.length.y.left=grid::unit(0.1,'line'),
-          axis.title.y=ggplot2::element_blank()) +
+                   axis.text.y.left = ggplot2::element_text(size=9),
+                   axis.title.x=ggplot2::element_blank(),
+                   panel.spacing.y = grid::unit(-0.15, "line"),
+                   strip.placement='outside',
+                   panel.border = ggplot2::element_blank(),
+                   panel.background= ggplot2::element_blank(),
+                   strip.background = ggplot2::element_blank(),
+                   strip.text.y.left = ggplot2::element_text(angle=0,size=10),
+                   plot.background = ggplot2::element_blank(),
+                   axis.ticks.length.y.left=grid::unit(0.1,'line'),
+                   axis.title.y=ggplot2::element_blank()) +
     ggplot2::facet_grid(rows=ggplot2::vars(roc_df$feature_name),scales = "free_y",switch = 'y')+
     ggplot2::scale_x_discrete(expand = c(0,0)) +
     ggplot2::scale_y_discrete(labels=roc_df$feature_concentration,breaks=roc_df$feature,expand = c(0,0))
+
+  if(star) {
+    plot_fig <- plot_fig +
+      ggplot2::geom_text(aes(label = v_star), color = "black", size = 3, nudge_y = -0.15)
+  }
+
+  return(plot_fig)
 
 }
