@@ -4,12 +4,14 @@
 \alias{plot_heatmap}
 \title{Title}
 \usage{
-plot_heatmap(roc_df, title = "heatmap")
+plot_heatmap(roc_df, title = "heatmap", star = FALSE)
 }
 \arguments{
 \item{roc_df}{A dataframe generated from make_heatmap}
 
 \item{title}{A title for the plot}
+
+\item{star}{Whether to add pvalue significance as stars.}
 }
 \value{
 a ggplot object
