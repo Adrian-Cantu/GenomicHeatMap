@@ -164,8 +164,8 @@ make_heatmap <- function(roc.res){
     `colnames<-`(colnames(roc.res$ROC)) %>%
     `rownames<-`(rownames(roc.res$ROC)) %>%
     as.data.frame() %>%
-    rownames_to_column(var = "feature") %>%
-    pivot_longer(!feature,values_to='v_star', names_to='sample')
+    tibble::rownames_to_column(var = "feature") %>%
+    tidyr::pivot_longer(!.data$feature,values_to='v_star', names_to='sample')
 
   # # to add stars as text to dataframe ---------------
   # ff_roc_df <- left_join(roc_df %>%  mutate(jj=paste0(feature,'_',sample)),
@@ -180,15 +180,16 @@ make_heatmap <- function(roc.res){
   stat_cuts <- c(0, 0.001, 0.01, 0.05, 1)
   roc_pval <- roc.res$pvalues$np %>%
     as.data.frame() %>%
-    rownames_to_column(var = "feature") %>%
-    pivot_longer(!feature,values_to='pval', names_to='sample') %>%
-    mutate(feature=sort_features(feature)) %>%
-    mutate(v_star=cut(pval, stat_cuts, labels = c("***", " **", " * ", "   "),include.lowest = TRUE))
+    tibble::rownames_to_column(var = "feature") %>%
+    tidyr::pivot_longer(!.data$feature,values_to='pval', names_to='sample') %>%
+    dplyr::mutate(feature=sort_features(.data$feature)) %>%
+    dplyr::mutate(v_star=cut(.data$pval, stat_cuts,
+                             labels = c("***", " **", " * ", "   "),include.lowest = TRUE))
 
-  ff_roc_df <- left_join(roc_df %>% mutate(jj=paste0(feature,'_',sample)),
-                          roc_pval%>% mutate(jj=paste0(feature,'_',sample)) %>% select(c(pval,v_star,jj)),
+  ff_roc_df <- dplyr::left_join(roc_df %>% dplyr::mutate(jj=paste0(.data$feature,'_',.data$sample)),
+                          roc_pval%>% dplyr::mutate(jj=paste0(.data$feature,'_',.data$sample)) %>% dplyr::select(c(.data$pval,.data$v_star,.data$jj)),
                           by='jj') %>%
-    mutate(jj=NULL)
+    dplyr::mutate(jj=NULL)
 
 
 
@@ -234,7 +235,7 @@ plot_heatmap <- function(roc_df,title='heatmap',star=FALSE) {
 
   if(star) {
     plot_fig <- plot_fig +
-      ggplot2::geom_text(aes(label = v_star), color = "black", size = 3, nudge_y = -0.15)
+      ggplot2::geom_text(ggplot2::aes(label = .data$v_star), color = "black", size = 3, nudge_y = -0.15)
   }
 
   return(plot_fig)

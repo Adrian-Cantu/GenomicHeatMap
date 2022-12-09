@@ -10,7 +10,7 @@ epi_annotate_df(
 )
 }
 \arguments{
-\item{feature_df}{datafram with real and random sites}
+\item{feature_df}{dataframe with real and random sites}
 
 \item{epi_directory}{directory with .rds of the tracks}
 }
