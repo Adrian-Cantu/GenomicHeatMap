@@ -15,6 +15,7 @@ biocViews:
 Imports: 
     BiocGenerics,
     BSgenome.Hsapiens.UCSC.hg38,
+    BSgenome.Mfascicularis.NCBI.5.0,
     dplyr,
     GenomeInfoDb,
     GenomicRanges,

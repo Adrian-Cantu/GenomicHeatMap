@@ -4,12 +4,10 @@
 \alias{make_heatmap}
 \title{makes heatmap figures}
 \usage{
-make_heatmap(roc.res, title = "heatmap")
+make_heatmap(roc.res)
 }
 \arguments{
 \item{roc.res}{roc object}
-
-\item{title}{title to display on the figure}
 }
 \value{
 a ggplot
