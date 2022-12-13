@@ -62,9 +62,10 @@ intsite_to_heatmap_df <- function(intSites,group_variable='patient',r_seed=as.nu
 
   intSites_coor <- intSites %>%
     BiocGenerics::as.data.frame() %>%
-    dplyr::select(c(.data$seqnames,.data$start,.data$end,.data$strand,.data[[group_variable]])) %>%
-    dplyr::mutate(type='insertion') %>%
-    dplyr::rename(heat_group=.data[[group_variable]]) #%>%
+    dplyr::mutate(heat_group=.data[[group_variable]]) %>%
+    dplyr::select(c(.data$seqnames,.data$start,.data$end,.data$strand,.data$heat_group)) %>%
+    dplyr::mutate(type='insertion') #%>%
+    #dplyr::rename(heat_group=.data[[group_variable]]) #%>%
     #dplyr::filter(seqnames!='chrM')
 
   group_vector <- intSites_coor$heat_group

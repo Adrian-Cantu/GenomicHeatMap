@@ -160,7 +160,7 @@ make_heatmap <- function(roc.res){
 
 
 
-  vehicle_stars <- omasks[[7]] %>%
+  vehicle_stars <- omasks[[1]] %>%
     `colnames<-`(colnames(roc.res$ROC)) %>%
     `rownames<-`(rownames(roc.res$ROC)) %>%
     as.data.frame() %>%
