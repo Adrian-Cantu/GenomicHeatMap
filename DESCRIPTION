@@ -30,7 +30,11 @@ Imports:
     stringr,
     tibble,
     tidyr,
-    utils
+    utils,
+    BSgenome,
+    Biostrings,
+    S4Vectors,
+    gdata
 Depends: 
     R (>= 2.10)
 LazyData: true

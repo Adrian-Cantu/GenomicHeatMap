@@ -4,7 +4,11 @@
 \alias{gen_annotate_df}
 \title{add genomic annotations}
 \usage{
-gen_annotate_df(ff_df, features = c("GC_content"))
+gen_annotate_df(
+  ff,
+  features = c("GC_content"),
+  windows = c(1000, 10000, 1e+06)
+)
 }
 \arguments{
 \item{ff_df}{a genomic ranges}

@@ -1,6 +1,10 @@
 #' add genomic annotations
 #'
-#' @param ff_df a genomic ranges
+#' @param ff a genomic ranges object
+#'
+#' @param features genomic features to calculate, any mix of c('GC_content')
+#'
+#' @param windows size of the windows to calculate
 #'
 #' @return the same genomic ranges object with genomic features added as extra columns
 #' @export
@@ -16,7 +20,7 @@ gen_annotate_df <- function(ff,features=c('GC_content'),windows=c(1000,10000,100
   genome_sequence@seqinfo <- genome_sequence@seqinfo %>% GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
   ff_df<- ff %>% as.data.frame()
   if (class(ff)[1]=='GRanges') {
-    ff_gr <- ff %>% keepStandardChromosomes(pruning.mode="coarse")
+    ff_gr <- ff %>% GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
     GenomeInfoDb::seqinfo(ff_gr) <- genome_sequence@seqinfo
   } else {
     ff_gr<- ff_df %>% GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = TRUE,seqinfo = genome_sequence@seqinfo)
