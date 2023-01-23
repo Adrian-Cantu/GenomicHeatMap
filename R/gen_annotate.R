@@ -17,7 +17,7 @@ gen_annotate_df <- function(ff,features=c('GC_content'),windows=c(1000,10000,100
   # TODO need to add code to select genome and seqinfo
   genome_sequence <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
   #genome_sequence@user_seqnames <- genome_sequence@user_seqnames %>% keepStandardChromosomes(pruning.mode="coarse")
-  genome_sequence@seqinfo <- genome_sequence@seqinfo %>% GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
+  #genome_sequence@seqinfo <- genome_sequence@seqinfo %>% GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
   ff_df<- ff %>% as.data.frame()
   if (class(ff)[1]=='GRanges') {
     ff_gr <- ff %>% GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
@@ -49,10 +49,18 @@ gen_annotate_df <- function(ff,features=c('GC_content'),windows=c(1000,10000,100
       #gen_df[,colnames(gc_tt)] <- gc_tt
       for(nn in names(windows)) {
         gg_esp <- (ff_gr+windows[nn]/2) %>% GenomicRanges::trim()
-        #GenomeInfoDb::isCircular(gg_esp) <- rep(FALSE,length(GenomeInfoDb::isCircular(gg_esp)))
+        GenomeInfoDb::isCircular(gg_esp) <- rep(FALSE,length(GenomeInfoDb::isCircular(gg_esp)))
+        gg_esp <- gg_esp %>% GenomicRanges::trim()
+        tt_genome_seq <- genome_sequence
+        si <- GenomeInfoDb::seqinfo(tt_genome_seq)
+        GenomeInfoDb::isCircular(si)["chrM"] <- FALSE
+        tt_genome_seq@seqinfo <- si
+
+
+        #GenomeInfoDb::isCircular(tt_genome_seq) <- rep(FALSE,length(GenomeInfoDb::isCircular(tt_genome_seq)))
         # gg_esp <- gg_esp %>%
         #   GenomicRanges::trim()
-        BSgenome::getSeq(genome_sequence,gg_esp) %>%
+        BSgenome::getSeq(tt_genome_seq,gg_esp) %>%
           Biostrings::alphabetFrequency() %>%
           tibble::as_tibble() %>% #TODO return gc=0 for strings with no ACGTs
           dplyr::mutate(gc=(.data$C+.data$G)/(.data$A+.data$T+.data$C+.data$G)) %>%

@@ -11,7 +11,11 @@ gen_annotate_df(
 )
 }
 \arguments{
-\item{ff_df}{a genomic ranges}
+\item{ff}{a genomic ranges object}
+
+\item{features}{genomic features to calculate, any mix of c('GC_content')}
+
+\item{windows}{size of the windows to calculate}
 }
 \value{
 the same genomic ranges object with genomic features added as extra columns
