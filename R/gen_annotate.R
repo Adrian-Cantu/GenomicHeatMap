@@ -9,11 +9,7 @@
 #' @return the same genomic ranges object with genomic features added as extra columns
 #' @export
 #'
-gen_annotate_df <- function(ff,features=c('GC_content'),windows=c(1000,10000,1000000)){
-  # epifiles_tmp <- list.files(epi_directory)
-  # epifiles <- epifiles_tmp[grepl('\\.rds$',epifiles_tmp)]
-  # names(epifiles) <- epifiles %>% stringr::str_remove(".rds")
-  # epinames <- names(epifiles)
+gen_annotate_df <- function(ff,features=c('GC_content','CpG','DNaseI_count'),windows=c(1000,10000,1000000)){
   # TODO need to add code to select genome and seqinfo
   genome_sequence <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
   #genome_sequence@user_seqnames <- genome_sequence@user_seqnames %>% keepStandardChromosomes(pruning.mode="coarse")
@@ -36,36 +32,44 @@ gen_annotate_df <- function(ff,features=c('GC_content'),windows=c(1000,10000,100
   # TODO this might break if length is < 1
   for (ll in 1:length(features)) {
     xx <- features[ll]
-    #name<-names(epifiles)[ll]
-    #xx <- readRDS(file=file.path(epi_directory,x))
-    # for (lll in 1:length(nums)) {
-    #   GenomicRanges::countOverlaps(ff_gr,xx, maxgap = nums[lll]/2, ignore.strand = TRUE) ->
-    #     epi_df[,paste(name,nums_l[lll],sep = '.')] #
-    #
-    # }
     if(xx=='GC_content'){
-      #window_size_GC <- c("1k"=1000, "10k"=1e4, "1M"=1e6)
-      #gc_tt <- getGCpercentage("GC", window_size_GC, genome_sequence)
-      #gen_df[,colnames(gc_tt)] <- gc_tt
       for(nn in names(windows)) {
         gg_esp <- (ff_gr+windows[nn]/2) %>% GenomicRanges::trim()
         GenomeInfoDb::isCircular(gg_esp) <- rep(FALSE,length(GenomeInfoDb::isCircular(gg_esp)))
         gg_esp <- gg_esp %>% GenomicRanges::trim()
         tt_genome_seq <- genome_sequence
+        # TODO this is a horrible hack
         si <- GenomeInfoDb::seqinfo(tt_genome_seq)
         GenomeInfoDb::isCircular(si)["chrM"] <- FALSE
         tt_genome_seq@seqinfo <- si
-
-
-        #GenomeInfoDb::isCircular(tt_genome_seq) <- rep(FALSE,length(GenomeInfoDb::isCircular(tt_genome_seq)))
-        # gg_esp <- gg_esp %>%
-        #   GenomicRanges::trim()
         BSgenome::getSeq(tt_genome_seq,gg_esp) %>%
           Biostrings::alphabetFrequency() %>%
           tibble::as_tibble() %>% #TODO return gc=0 for strings with no ACGTs
           dplyr::mutate(gc=(.data$C+.data$G)/(.data$A+.data$T+.data$C+.data$G)) %>%
           dplyr::pull(gc) ->
           gen_df[,paste('GC_content',nn,sep = '.')]
+      }
+    }
+    if(xx=='CpG'){
+      bsession <- makeUCSCsession("hg38")
+      ttt <- ucscTableQuery(bsession, track = "CpG Islands", table = "cpgIslandExt") %>%
+        getTable() %>%
+        GenomicRanges::makeGRangesFromDataFrame() %>%
+        GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
+      for(nn in names(windows)) {
+        GenomicRanges::countOverlaps(ff_gr,ttt, maxgap = windows[nn]/2, ignore.strand = TRUE) ->
+          gen_df[,paste('CpG',nn,sep = '.')]
+      }
+    }
+    if(xx=='DNaseI_count'){
+      bsession <- makeUCSCsession("hg38")
+      ttt <- ucscTableQuery(bsession, track = "DNase Clusters", table = "wgEncodeRegDnaseClustered") %>%
+        getTable() %>%
+        GenomicRanges::makeGRangesFromDataFrame() %>%
+        GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
+      for(nn in names(windows)) {
+        GenomicRanges::countOverlaps(ff_gr,ttt, maxgap = windows[nn]/2, ignore.strand = TRUE) ->
+          gen_df[,paste('DNaseI_count',nn,sep = '.')]
       }
     }
   }

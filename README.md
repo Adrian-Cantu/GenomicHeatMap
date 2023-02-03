@@ -28,7 +28,7 @@ This should work out of the box:
 ``` r
 library(GenomicHeatMap)
 intsite_to_heatmap_df(sample_intSites) %>%
-  epi_annotate_df2() %>%
+  #epi_annotate_df2() %>%
   gen_annotate_df() %>% 
   make_roc() %>%
   make_heatmap() %>% 
