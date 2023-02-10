@@ -46,7 +46,7 @@ epi_annotate_df2 <- function(ff_df,epi_directory = system.file("exdata", package
   epi_df <- matrix(0,nrow = nrow(ff_df),ncol = length(ll_names),dimnames = list(NULL,ll_names)) %>%
     tibble::as_tibble()
   ff_gr <- ff_df %>% GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = TRUE)
-
+  # TODO this might break if length is < 1
   for (ll in 1:length(epifiles)) {
     x <- epifiles[ll]
     name<-names(epifiles)[ll]
