@@ -6,7 +6,7 @@
 \usage{
 gen_annotate_df(
   ff,
-  features = c("GC_content"),
+  features = c("GC_content", "CpG", "DNaseI_count"),
   windows = c(1000, 10000, 1e+06)
 )
 }

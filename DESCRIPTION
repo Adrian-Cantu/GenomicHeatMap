@@ -8,7 +8,7 @@ Description: GenomicHeatMap is used to generate genomics and epigeniomic heatmap
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Remotes: github::Adrian-Cantu/hotROCs,
     github::Adrian-Cantu/hiAnnotator
 biocViews:
@@ -32,9 +32,9 @@ Imports:
     tidyr,
     utils,
     BSgenome,
+    rtracklayer,
     Biostrings,
-    S4Vectors,
     gdata
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5.0)
 LazyData: true

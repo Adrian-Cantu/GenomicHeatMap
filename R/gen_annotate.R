@@ -51,9 +51,10 @@ gen_annotate_df <- function(ff,features=c('GC_content','CpG','DNaseI_count'),win
       }
     }
     if(xx=='CpG'){
-      bsession <- makeUCSCsession("hg38")
-      ttt <- ucscTableQuery(bsession, track = "CpG Islands", table = "cpgIslandExt") %>%
-        getTable() %>%
+      bsession <- rtracklayer::browserSession()
+      rtracklayer::genome(bsession) <- "hg38"
+      ttt <- rtracklayer::ucscTableQuery(bsession, track = "CpG Islands", table = "cpgIslandExt") %>%
+        rtracklayer::getTable() %>%
         GenomicRanges::makeGRangesFromDataFrame() %>%
         GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
       for(nn in names(windows)) {
@@ -62,9 +63,10 @@ gen_annotate_df <- function(ff,features=c('GC_content','CpG','DNaseI_count'),win
       }
     }
     if(xx=='DNaseI_count'){
-      bsession <- makeUCSCsession("hg38")
-      ttt <- ucscTableQuery(bsession, track = "DNase Clusters", table = "wgEncodeRegDnaseClustered") %>%
-        getTable() %>%
+      bsession <- rtracklayer::browserSession()
+      rtracklayer::genome(bsession) <- "hg38"
+      ttt <- rtracklayer::ucscTableQuery(bsession, track = "DNase Clusters", table = "wgEncodeRegDnaseClustered") %>%
+        rtracklayer::getTable() %>%
         GenomicRanges::makeGRangesFromDataFrame() %>%
         GenomeInfoDb::keepStandardChromosomes(pruning.mode="coarse")
       for(nn in names(windows)) {
